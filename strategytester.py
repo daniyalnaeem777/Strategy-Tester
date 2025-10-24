@@ -1,4 +1,4 @@
-# tp_sl_calculator.py — Final Visual-Polished TP/SL (Live + Backtest)
+# tp_sl_calculator.py — TP/SL (Live + Backtest) • wide charts • polished UI
 # Long:  SL = Entry − (SL_mult × ATR)   |   TP = Entry + (2.0 × ATR)
 # Short: SL = Entry + (SL_mult × ATR)   |   TP = Entry − (2.0 × ATR)
 
@@ -12,33 +12,29 @@ try:
 except ModuleNotFoundError:
     plt = None
 
-# ---------- Page ----------
-st.set_page_config(page_title="TP/SL Calculator", page_icon="📈", layout="centered")
+# ---------- Page (wide so charts aren't tiny) ----------
+st.set_page_config(page_title="TP/SL Calculator", page_icon="📈", layout="wide")
 
-# ---------- CSS (clean Helvetica UI, single bordered rectangles) ----------
+# ---------- CSS ----------
 st.markdown("""
 <style>
   * { font-family: Helvetica, Arial, sans-serif !important; }
   h1,h2,h3,h4,strong,b { font-weight: 700 !important; letter-spacing:.2px; }
   .subtitle { font-style: italic; margin-top:-6px; margin-bottom:14px; }
 
-  /* Section rectangles */
+  /* Single rectangle per section */
   [data-testid="stContainer"] > div[style*="border: 1px solid"] {
     border: 1px solid rgba(255,255,255,0.85) !important;
     border-radius: 14px !important;
-    padding: 8px 12px !important;
+    padding: 12px 16px !important;
+    margin-bottom: 14px !important;
   }
 
-  /* Chips */
   .chip {
     display:inline-block; padding:6px 10px; border-radius:999px;
     border:1px solid rgba(255,255,255,0.14); margin-right:8px;
   }
-
-  /* Bold radio labels */
   .boldlabel label > div:first-child { font-weight: 700 !important; }
-
-  /* Inputs */
   .stNumberInput > div > div > input { font-weight:700; }
 </style>
 """, unsafe_allow_html=True)
@@ -104,15 +100,12 @@ with st.container(border=True):
 
 # ================== LIVE MODE ==================
 if mode == "Live":
-
-    # Direction
     with st.container(border=True):
         st.markdown("### **Direction**")
         st.markdown("<div class='boldlabel'>", unsafe_allow_html=True)
         side_live = st.radio("Direction", ["Long", "Short"], horizontal=True, label_visibility="collapsed", key="live_dir")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # SL Multiple
     with st.container(border=True):
         st.markdown("### **SL Multiple**")
         sl_choice_live = st.radio("SL × ATR", ["1.0", "1.5"], horizontal=True, label_visibility="collapsed", key="live_sl")
@@ -123,7 +116,6 @@ if mode == "Live":
             unsafe_allow_html=True
         )
 
-    # Inputs
     with st.container(border=True):
         c1, c2 = st.columns(2)
         with c1:
@@ -131,7 +123,6 @@ if mode == "Live":
         with c2:
             atr_live = st.number_input("ATR (14)", min_value=0.0, format=f"%.{DEC}f", key="live_atr")
 
-    # Calculate Results
     with st.container(border=True):
         if st.button("Calculate", key="calc_live"):
             if entry_live <= 0 or atr_live <= 0:
@@ -164,8 +155,6 @@ if mode == "Live":
 
 # ================== BACKTEST MODE ==================
 if mode == "Backtest":
-
-    # Controls
     with st.container(border=True):
         st.markdown("### **Backtesting Controls**")
         start_equity = st.number_input(
@@ -200,7 +189,6 @@ if mode == "Backtest":
             else:
                 st.info("No active session to end.")
 
-    # Backtest calculator (no "Calculator" heading)
     with st.container(border=True):
         # Direction
         st.markdown("**Direction**")
@@ -261,25 +249,29 @@ if mode == "Backtest":
 
             st.markdown("---")
             st.markdown("**Record Trade**")
-            exit_price = st.number_input("Exit Price (for Closed at 'Selected Price')", min_value=0.0, format=f"%.{DEC}f", key="bt_exit")
+            exit_price = st.number_input("Exit Price (for Closed at 'Selected Price')",
+                                         min_value=0.0, format=f"%.{DEC}f", key="bt_exit")
 
             r1, r2, r3 = st.columns(3)
             with r1:
-                if st.button("Record Win", use_container_width=True, disabled=not st.session_state.bt["recording"], key="rec_win"):
+                if st.button("Record Win", use_container_width=True,
+                             disabled=not st.session_state.bt["recording"], key="rec_win"):
                     calc = st.session_state.bt["last_calc"]
                     _compound(calc["tp_pct"] / 100.0)
                     _log_trade("WIN", calc["side"], calc["entry"], calc["atr"], calc["sl_mult"],
                                calc["sl"], calc["tp"], calc["rr"], None, calc["tp_pct"])
                     st.success("Recorded full TP win.")
             with r2:
-                if st.button("Record Loss", use_container_width=True, disabled=not st.session_state.bt["recording"], key="rec_loss"):
+                if st.button("Record Loss", use_container_width=True,
+                             disabled=not st.session_state.bt["recording"], key="rec_loss"):
                     calc = st.session_state.bt["last_calc"]
                     _compound(-(calc["sl_pct"] / 100.0))
                     _log_trade("LOSS", calc["side"], calc["entry"], calc["atr"], calc["sl_mult"],
                                calc["sl"], calc["tp"], calc["rr"], None, -calc["sl_pct"])
                     st.warning("Recorded full SL loss.")
             with r3:
-                if st.button("Closed at 'Selected Price'", use_container_width=True, disabled=not st.session_state.bt["recording"], key="rec_closed"):
+                if st.button("Closed at 'Selected Price'", use_container_width=True,
+                             disabled=not st.session_state.bt["recording"], key="rec_closed"):
                     if exit_price <= 0:
                         st.error("Enter a valid Exit Price.")
                     else:
@@ -288,8 +280,8 @@ if mode == "Backtest":
                         _compound(pct / 100.0)
                         _log_trade("CLOSED", calc["side"], calc["entry"], calc["atr"], calc["sl_mult"],
                                    calc["sl"], calc["tp"], calc["rr"], exit_price, pct)
-                        st.info(f"Recorded CLOSED at {exit_price:.{DEC}f} ({'▲' if pct>=0 else '▼'}{abs(pct):.2f}%).")
-
+                        st.info(f"Recorded CLOSED at {exit_price:.{DEC}f} "
+                                f"({'▲' if pct>=0 else '▼'}{abs(pct):.2f}%).")
         else:
             st.info("Enter **Entry** and **ATR** to see TP/SL and record trades.")
 
@@ -301,14 +293,15 @@ if mode == "Backtest":
             raw = raw[[c for c in cols if c in raw.columns]].copy()
             raw.insert(0, "Serial Number", range(1, len(raw)+1))
             raw = raw.rename(columns={
-                "ts":"Time","result":"Result","side":"Side","entry":"Entry","atr":"ATR",
-                "sl_mult":"stop-loss_multiple","sl":"SL","tp":"TP","rr":"Risk/Return",
-                "exit_price":"Exit Price","pct_gain":"Pct Gain"
+                "ts":"Time", "result":"Result", "side":"Side", "entry":"Entry", "atr":"ATR",
+                "sl_mult":"SL Multiple", "sl":"SL", "tp":"TP", "rr":"Risk/Return",
+                "exit_price":"Exit Price", "pct_gain":"% Gain"
             })
             with st.container(border=True):
                 st.markdown("### **Trades**")
                 st.dataframe(raw, use_container_width=True)
-                st.download_button("⬇️ Download CSV", raw.to_csv(index=False).encode("utf-8"), "backtest_log.csv", "text/csv")
+                st.download_button("⬇️ Download CSV", raw.to_csv(index=False).encode("utf-8"),
+                                   "backtest_log.csv", "text/csv")
 
         wins = sum(1 for t in st.session_state.bt["trades"]
                    if (t["result"]=="WIN") or (t["result"]=="CLOSED" and t["pct_gain"]>=0))
@@ -324,13 +317,13 @@ if mode == "Backtest":
                 labels = ["Wins", "Losses"]
                 colors = ["#00c853", "#ff1744"]  # green, red
 
-                fig, ax = plt.subplots(figsize=(8, 6))
+                # Bigger figure + reserved space for legend outside
+                fig, ax = plt.subplots(figsize=(12, 6))
                 fig.patch.set_facecolor("black")
                 ax.set_facecolor("black")
-                # Reserve space on the right for legend
-                fig.subplots_adjust(left=0.05, right=0.78, top=0.95, bottom=0.05)
+                fig.subplots_adjust(left=0.05, right=0.78, top=0.95, bottom=0.06)
 
-                wedges, texts, autotexts = ax.pie(
+                wedges, _, _ = ax.pie(
                     values,
                     labels=None,  # legend handles labels
                     colors=colors,
@@ -339,7 +332,6 @@ if mode == "Backtest":
                     textprops={"color": "white", "weight": "bold"}
                 )
                 ax.axis("equal")
-                # Legend OUTSIDE on the right
                 ax.legend(
                     wedges, labels,
                     loc="center left",
@@ -359,8 +351,10 @@ if mode == "Backtest":
                 for t in st.session_state.bt["trades"]:
                     e *= (1.0 + (t["pct_gain"]/100.0))
                     eq.append(e)
-                fig2, ax2 = plt.subplots()
+
+                fig2, ax2 = plt.subplots(figsize=(12, 4))
                 ax2.plot(range(len(eq)), eq, marker='o')
                 ax2.set_xlabel("Trades")
                 ax2.set_ylabel("Account Value")
+                ax2.grid(alpha=0.25)
                 st.pyplot(fig2, use_container_width=True)
