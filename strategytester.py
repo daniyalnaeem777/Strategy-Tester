@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 
 # ---------- Page setup ----------
@@ -43,7 +44,7 @@ st.caption("Fast risk targets based on ATR")
 st.subheader("Mode")
 mode = st.radio("Select mode", ["Live", "Backtesting"], horizontal=True)
 
-# Initialize backtesting state
+# Initialize session state
 if "sl_mult" not in st.session_state:
     st.session_state.sl_mult = 1.0
 if "wins" not in st.session_state:
@@ -52,6 +53,8 @@ if "losses" not in st.session_state:
     st.session_state.losses = 0
 if "backtesting_done" not in st.session_state:
     st.session_state.backtesting_done = False
+if "trade_calculated" not in st.session_state:
+    st.session_state.trade_calculated = False
 
 # ---------- ATR Multiple Buttons ----------
 st.subheader("Stop-Loss multiple")
@@ -104,55 +107,109 @@ if submitted:
         sl_pct = (dsl / entry) * 100
         tp_pct = (dtp / entry) * 100
 
-        # ---------- Output ----------
-        st.subheader("Results")
-        a, b, c = st.columns(3)
-        with a:
-            st.markdown("**Stop Loss**")
-            st.markdown(f"<div class='result-box' style='background-color:#3b1d1d;color:#ff6b6b;'>{sl:.4f}</div>", unsafe_allow_html=True)
-            st.caption(f"Δ {dsl:.4f} ({sl_pct:.2f}%)")
-        with b:
-            st.markdown("**Take Profit**")
-            st.markdown(f"<div class='result-box' style='background-color:#1d3b1d;color:#66ff91;'>{tp:.4f}</div>", unsafe_allow_html=True)
-            st.caption(f"Δ {dtp:.4f} ({tp_pct:.2f}%)")
-        with c:
-            st.markdown("**Reward : Risk**")
-            st.markdown(f"<div class='result-box' style='background-color:#1d263b;color:#7bb5ff;'>{rr:.2f} : 1</div>", unsafe_allow_html=True)
+        # Store last calculated values
+        st.session_state.last_entry = entry
+        st.session_state.last_atr = atr
+        st.session_state.last_side = side
+        st.session_state.last_sl = sl
+        st.session_state.last_tp = tp
+        st.session_state.last_rr = rr
+        st.session_state.last_dsl = dsl
+        st.session_state.last_dtp = dtp
+        st.session_state.last_sl_pct = sl_pct
+        st.session_state.last_tp_pct = tp_pct
+        st.session_state.trade_calculated = True
 
+        # Show output only in Live mode
+        if mode == "Live":
+            st.markdown("---")
+            st.subheader("Results")
+            a, b, c = st.columns(3)
+            with a:
+                st.markdown("**Stop Loss**")
+                st.markdown(f"<div class='result-box' style='background-color:#3b1d1d;color:#ff6b6b;'>{sl:.4f}</div>", unsafe_allow_html=True)
+                st.caption(f"Δ {dsl:.4f} ({sl_pct:.2f}%)")
+            with b:
+                st.markdown("**Take Profit**")
+                st.markdown(f"<div class='result-box' style='background-color:#1d3b1d;color:#66ff91;'>{tp:.4f}</div>", unsafe_allow_html=True)
+                st.caption(f"Δ {dtp:.4f} ({tp_pct:.2f}%)")
+            with c:
+                st.markdown("**Reward : Risk**")
+                st.markdown(f"<div class='result-box' style='background-color:#1d263b;color:#7bb5ff;'>{rr:.2f} : 1</div>", unsafe_allow_html=True)
+
+            st.markdown("---")
+            st.subheader("Formulae")
+            sign_sl = "-" if side == "Long" else "+"
+            sign_tp = "+" if side == "Long" else "-"
+            st.code(
+                f"{side.upper()}\n"
+                f"SL = Entry {sign_sl} {sl_mult} × ATR\n"
+                f"TP = Entry {sign_tp} {tp_mult} × ATR",
+                language="text"
+            )
+
+# ---------- Backtesting-specific features ----------
+if mode == "Backtesting" and st.session_state.trade_calculated:
+    st.markdown("---")
+    st.subheader("Last Trade Levels")
+    a, b, c = st.columns(3)
+    with a:
+        st.markdown("**Stop Loss**")
+        st.markdown(f"<div class='result-box' style='background-color:#3b1d1d;color:#ff6b6b;'>{st.session_state.last_sl:.4f}</div>", unsafe_allow_html=True)
+        st.caption(f"Δ {st.session_state.last_dsl:.4f} ({st.session_state.last_sl_pct:.2f}%)")
+    with b:
+        st.markdown("**Take Profit**")
+        st.markdown(f"<div class='result-box' style='background-color:#1d3b1d;color:#66ff91;'>{st.session_state.last_tp:.4f}</div>", unsafe_allow_html=True)
+        st.caption(f"Δ {st.session_state.last_dtp:.4f} ({st.session_state.last_tp_pct:.2f}%)")
+    with c:
+        st.markdown("**Reward : Risk**")
+        st.markdown(f"<div class='result-box' style='background-color:#1d263b;color:#7bb5ff;'>{st.session_state.last_rr:.2f} : 1</div>", unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.subheader("Formulae")
+    sign_sl = "-" if st.session_state.last_side == "Long" else "+"
+    sign_tp = "+" if st.session_state.last_side == "Long" else "-"
+    sl_mult = st.session_state.sl_mult
+    st.code(
+        f"{st.session_state.last_side.upper()}\n"
+        f"SL = Entry {sign_sl} {sl_mult} × ATR\n"
+        f"TP = Entry {sign_tp} 2.0 × ATR",
+        language="text"
+    )
+
+    st.markdown("---")
+    st.subheader("Record Trade Outcome (based on TradingView replay)")
+    col1, col2, col3 = st.columns(3)
+    if col1.button("Win (Hit TP)") and not st.session_state.backtesting_done:
+        st.session_state.wins += 1
+        st.success("Recorded as Win!")
+    if col2.button("Loss (Hit SL)") and not st.session_state.backtesting_done:
+        st.session_state.losses += 1
+        st.warning("Recorded as Loss!")
+    if col3.button("Done"):
+        if st.session_state.backtesting_done:
+            # Reset
+            st.session_state.wins = 0
+            st.session_state.losses = 0
+            st.session_state.backtesting_done = False
+            st.session_state.trade_calculated = False
+            st.success("Backtesting session reset!")
+        else:
+            # Finalize
+            st.session_state.backtesting_done = True
+            st.success("Backtesting session finalized! Results below.")
+
+    if st.session_state.backtesting_done:
         st.markdown("---")
-        st.subheader("Formulae")
-        sign_sl = "-" if side == "Long" else "+"
-        sign_tp = "+" if side == "Long" else "-"
-        st.code(
-            f"{side.upper()}\n"
-            f"SL = Entry {sign_sl} {sl_mult} × ATR\n"
-            f"TP = Entry {sign_tp} {tp_mult} × ATR",
-            language="text"
-        )
-
-        # ---------- Backtesting-specific features ----------
-        if mode == "Backtesting":
-            if not st.session_state.backtesting_done:
-                st.markdown("---")
-                st.subheader("Record Trade Outcome (based on TradingView replay)")
-                col1, col2, col3 = st.columns(3)
-                if col1.button("Win (Hit TP)"):
-                    st.session_state.wins += 1
-                    st.success("Recorded as Win!")
-                if col2.button("Loss (Hit SL)"):
-                    st.session_state.losses += 1
-                    st.success("Recorded as Loss!")
-                if col3.button("Done"):
-                    st.session_state.backtesting_done = True
-
-            if st.session_state.backtesting_done:
-                total = st.session_state.wins + st.session_state.losses
-                st.markdown("---")
-                st.subheader("Backtesting Results")
-                st.write(f"Total trades: {total}")
-                st.write(f"Number of wins: {st.session_state.wins}")
-                st.write(f"Number of losses: {st.session_state.losses}")
-                if st.button("Reset Backtesting"):
-                    st.session_state.wins = 0
-                    st.session_state.losses = 0
-                    st.session_state.backtesting_done = False
+        total = st.session_state.wins + st.session_state.losses
+        st.subheader("Backtesting Results")
+        if total == 0:
+            st.info("No trades recorded yet.")
+        else:
+            col1, col2 = st.columns(2)
+            col1.metric("Wins", st.session_state.wins)
+            col2.metric("Losses", st.session_state.losses)
+            st.metric("Total Trades", total)
+            win_rate = (st.session_state.wins / total * 100) if total > 0 else 0
+            st.metric("Win Rate", f"{win_rate:.1f}%")
+```
