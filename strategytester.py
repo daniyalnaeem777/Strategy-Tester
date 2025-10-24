@@ -112,9 +112,9 @@ if mode == "Live":
         side_live = st.radio("Direction", ["Long", "Short"], horizontal=True, label_visibility="collapsed", key="live_dir")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # Stop-Loss Multiple
+    # SL Multiple
     with st.container(border=True):
-        st.markdown("### **Stop-Loss Multiple**")
+        st.markdown("### **SL Multiple**")
         sl_choice_live = st.radio("SL × ATR", ["1.0", "1.5"], horizontal=True, label_visibility="collapsed", key="live_sl")
         sl_mult_live = 1.0 if sl_choice_live == "1.0" else 1.5
         st.markdown(
@@ -200,7 +200,7 @@ if mode == "Backtest":
             else:
                 st.info("No active session to end.")
 
-    # Calculator (no heading)
+    # Backtest calculator (no "Calculator" heading)
     with st.container(border=True):
         # Direction
         st.markdown("**Direction**")
@@ -208,8 +208,8 @@ if mode == "Backtest":
         side = st.radio("Direction", ["Long", "Short"], horizontal=True, label_visibility="collapsed", key="bt_dir")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Stop-Loss Multiple
-        st.markdown("**Stop-Loss Multiple**")
+        # SL Multiple
+        st.markdown("**SL Multiple**")
         sl_choice = st.radio("SL × ATR", ["1.0", "1.5"], horizontal=True, label_visibility="collapsed", key="bt_sl")
         sl_mult = 1.0 if sl_choice == "1.0" else 1.5
         st.markdown(
@@ -252,6 +252,7 @@ if mode == "Backtest":
                 st.markdown("**Reward : Risk**")
                 st.info(f"**{rr:.2f} : 1**")
 
+            # Snapshot for record buttons
             st.session_state.bt["last_calc"] = {
                 "side": side, "entry": entry, "atr": atr,
                 "sl_mult": sl_mult, "sl": sl, "tp": tp, "rr": rr,
@@ -260,25 +261,25 @@ if mode == "Backtest":
 
             st.markdown("---")
             st.markdown("**Record Trade**")
-            exit_price = st.number_input("Exit Price (for 'Closed at selected price')", min_value=0.0, format=f"%.{DEC}f", key="bt_exit")
+            exit_price = st.number_input("Exit Price (for Closed at 'Selected Price')", min_value=0.0, format=f"%.{DEC}f", key="bt_exit")
 
             r1, r2, r3 = st.columns(3)
             with r1:
-                if st.button("Record Win ✅", use_container_width=True, disabled=not st.session_state.bt["recording"], key="rec_win"):
+                if st.button("Record Win", use_container_width=True, disabled=not st.session_state.bt["recording"], key="rec_win"):
                     calc = st.session_state.bt["last_calc"]
                     _compound(calc["tp_pct"] / 100.0)
                     _log_trade("WIN", calc["side"], calc["entry"], calc["atr"], calc["sl_mult"],
                                calc["sl"], calc["tp"], calc["rr"], None, calc["tp_pct"])
                     st.success("Recorded full TP win.")
             with r2:
-                if st.button("Record Loss ❌", use_container_width=True, disabled=not st.session_state.bt["recording"], key="rec_loss"):
+                if st.button("Record Loss", use_container_width=True, disabled=not st.session_state.bt["recording"], key="rec_loss"):
                     calc = st.session_state.bt["last_calc"]
                     _compound(-(calc["sl_pct"] / 100.0))
                     _log_trade("LOSS", calc["side"], calc["entry"], calc["atr"], calc["sl_mult"],
                                calc["sl"], calc["tp"], calc["rr"], None, -calc["sl_pct"])
                     st.warning("Recorded full SL loss.")
             with r3:
-                if st.button("Closed at selected price 🟩", use_container_width=True, disabled=not st.session_state.bt["recording"], key="rec_closed"):
+                if st.button("Closed at 'Selected Price'", use_container_width=True, disabled=not st.session_state.bt["recording"], key="rec_closed"):
                     if exit_price <= 0:
                         st.error("Enter a valid Exit Price.")
                     else:
@@ -313,24 +314,39 @@ if mode == "Backtest":
                    if (t["result"]=="WIN") or (t["result"]=="CLOSED" and t["pct_gain"]>=0))
         losses = sum(1 for t in st.session_state.bt["trades"]
                      if (t["result"]=="LOSS") or (t["result"]=="CLOSED" and t["pct_gain"]<0))
+
         with st.container(border=True):
             st.markdown("### **Win / Loss Breakdown**")
             if plt is None:
                 st.error("Matplotlib required for pie chart.")
             else:
-                fig, ax = plt.subplots()
+                values = [wins, losses]
+                labels = ["Wins", "Losses"]
+                colors = ["#00c853", "#ff1744"]  # green, red
+
+                fig, ax = plt.subplots(figsize=(8, 6))
                 fig.patch.set_facecolor("black")
                 ax.set_facecolor("black")
-                wedges, _, _ = ax.pie(
-                    [wins, losses],
-                    colors=["#00c853", "#ff1744"],
+                # Reserve space on the right for legend
+                fig.subplots_adjust(left=0.05, right=0.78, top=0.95, bottom=0.05)
+
+                wedges, texts, autotexts = ax.pie(
+                    values,
+                    labels=None,  # legend handles labels
+                    colors=colors,
                     autopct=lambda p: f"{p:.1f}%",
                     startangle=90,
-                    textprops={"color":"white","weight":"bold"}
+                    textprops={"color": "white", "weight": "bold"}
                 )
                 ax.axis("equal")
-                ax.legend(wedges, ["Wins","Losses"], loc="center", bbox_to_anchor=(0.85, 0.5),
-                          frameon=False, labelcolor="white")
+                # Legend OUTSIDE on the right
+                ax.legend(
+                    wedges, labels,
+                    loc="center left",
+                    bbox_to_anchor=(1.02, 0.5),
+                    frameon=False,
+                    labelcolor="white"
+                )
                 st.pyplot(fig, use_container_width=True)
 
         with st.container(border=True):
