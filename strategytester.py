@@ -15,14 +15,14 @@ except ModuleNotFoundError:
 # ---------- Page ----------
 st.set_page_config(page_title="TP/SL Calculator", page_icon="📈", layout="centered")
 
-# ---------- CSS (same section feel as your ladder app) ----------
+# ---------- CSS (clean Helvetica UI, single bordered rectangles) ----------
 st.markdown("""
 <style>
   * { font-family: Helvetica, Arial, sans-serif !important; }
   h1,h2,h3,h4,strong,b { font-weight: 700 !important; letter-spacing:.2px; }
   .subtitle { font-style: italic; margin-top:-6px; margin-bottom:14px; }
 
-  /* Section rectangles: only these have borders */
+  /* Section rectangles */
   [data-testid="stContainer"] > div[style*="border: 1px solid"] {
     border: 1px solid rgba(255,255,255,0.85) !important;
     border-radius: 14px !important;
@@ -35,10 +35,10 @@ st.markdown("""
     border:1px solid rgba(255,255,255,0.14); margin-right:8px;
   }
 
-  /* Bold radio labels for Direction block */
+  /* Bold radio labels */
   .boldlabel label > div:first-child { font-weight: 700 !important; }
 
-  /* Stronger numeric input weight */
+  /* Inputs */
   .stNumberInput > div > div > input { font-weight:700; }
 </style>
 """, unsafe_allow_html=True)
@@ -68,13 +68,9 @@ def _pct_to_tp_sl(entry, sl, tp, side):
     return sl_pct, tp_pct
 
 def _pct_from_exit(entry, exit_price, side):
-    if side == "Long":
-        return ((exit_price - entry) / entry) * 100.0
-    else:
-        return ((entry - exit_price) / entry) * 100.0
+    return ((exit_price - entry) / entry) * 100.0 if side == "Long" else ((entry - exit_price) / entry) * 100.0
 
 def _compound(dec_pct):
-    """Multiply full equity by (1 + dec_pct); dec_pct is decimal (e.g., +0.018)."""
     if st.session_state.bt["equity"] is None:
         st.warning("Start a backtesting session first.")
         return
@@ -83,7 +79,7 @@ def _compound(dec_pct):
 def _log_trade(result_label, side, entry, atr, sl_mult, sl, tp, rr, exit_price, pct_gain):
     st.session_state.bt["trades"].append({
         "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "result": result_label,         # "WIN" | "LOSS" | "CLOSED"
+        "result": result_label,
         "side": side,
         "entry": entry,
         "atr": atr,
@@ -91,13 +87,16 @@ def _log_trade(result_label, side, entry, atr, sl_mult, sl, tp, rr, exit_price, 
         "sl": sl,
         "tp": tp,
         "rr": rr,
-        "exit_price": exit_price,       # may be None
-        "pct_gain": pct_gain            # signed %
+        "exit_price": exit_price,
+        "pct_gain": pct_gain,
     })
 
 # ---------- Title ----------
 st.markdown("# TP/SL Calculator")
-st.markdown("<div class='subtitle'>Live & Backtest • realistic compounding • ladder-style single rectangles</div>", unsafe_allow_html=True)
+st.markdown(
+    "<div class='subtitle'>Live & Backtest • Realistic Compounding • Precision-Engineered Strategy Execution</div>",
+    unsafe_allow_html=True
+)
 
 # ================== SECTION 1: Mode ==================
 with st.container(border=True):
@@ -106,14 +105,14 @@ with st.container(border=True):
 # ================== LIVE MODE ==================
 if mode == "Live":
 
-    # Section: Direction
+    # Direction
     with st.container(border=True):
         st.markdown("### **Direction**")
         st.markdown("<div class='boldlabel'>", unsafe_allow_html=True)
         side_live = st.radio("Direction", ["Long", "Short"], horizontal=True, label_visibility="collapsed", key="live_dir")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # Section: Stop-Loss Multiple
+    # Stop-Loss Multiple
     with st.container(border=True):
         st.markdown("### **Stop-Loss Multiple**")
         sl_choice_live = st.radio("SL × ATR", ["1.0", "1.5"], horizontal=True, label_visibility="collapsed", key="live_sl")
@@ -124,7 +123,7 @@ if mode == "Live":
             unsafe_allow_html=True
         )
 
-    # Section: Inputs
+    # Inputs
     with st.container(border=True):
         c1, c2 = st.columns(2)
         with c1:
@@ -132,7 +131,7 @@ if mode == "Live":
         with c2:
             atr_live = st.number_input("ATR (14)", min_value=0.0, format=f"%.{DEC}f", key="live_atr")
 
-    # Section: Calculate + Results
+    # Calculate Results
     with st.container(border=True):
         if st.button("Calculate", key="calc_live"):
             if entry_live <= 0 or atr_live <= 0:
@@ -150,7 +149,6 @@ if mode == "Live":
                     dsl, dtp = sl - entry_live, entry_live - tp
 
                 sl_pct, tp_pct = _pct_to_tp_sl(entry_live, sl, tp, side_live)
-
                 a, b, c = st.columns(3)
                 with a:
                     st.markdown("**SL**")
@@ -167,7 +165,7 @@ if mode == "Live":
 # ================== BACKTEST MODE ==================
 if mode == "Backtest":
 
-    # Section: Backtesting Controls (stacked Start/End)
+    # Controls
     with st.container(border=True):
         st.markdown("### **Backtesting Controls**")
         start_equity = st.number_input(
@@ -178,7 +176,7 @@ if mode == "Backtest":
             format="%.2f",
         )
         start_clicked = st.button("Start Session", use_container_width=True, key="start_bt")
-        end_clicked   = st.button("End Session",   use_container_width=True, key="end_bt")
+        end_clicked = st.button("End Session", use_container_width=True, key="end_bt")
 
         if start_clicked:
             if start_equity <= 0:
@@ -202,10 +200,8 @@ if mode == "Backtest":
             else:
                 st.info("No active session to end.")
 
-    # Section: Calculator
+    # Calculator (no heading)
     with st.container(border=True):
-        st.markdown("### **Calculator**")
-
         # Direction
         st.markdown("**Direction**")
         st.markdown("<div class='boldlabel'>", unsafe_allow_html=True)
@@ -222,14 +218,13 @@ if mode == "Backtest":
             unsafe_allow_html=True
         )
 
-        # Entry & ATR
+        # Entry + ATR
         c1, c2 = st.columns(2)
         with c1:
             entry = st.number_input("Entry Price", min_value=0.0, format=f"%.{DEC}f", key="bt_entry")
         with c2:
             atr = st.number_input("ATR (14)", min_value=0.0, format=f"%.{DEC}f", key="bt_atr")
 
-        # Show TP/SL when valid
         if entry > 0 and atr > 0:
             if side == "Long":
                 sl = entry - sl_mult * atr
@@ -257,7 +252,6 @@ if mode == "Backtest":
                 st.markdown("**Reward : Risk**")
                 st.info(f"**{rr:.2f} : 1**")
 
-            # Snapshot for recorder
             st.session_state.bt["last_calc"] = {
                 "side": side, "entry": entry, "atr": atr,
                 "sl_mult": sl_mult, "sl": sl, "tp": tp, "rr": rr,
@@ -298,9 +292,8 @@ if mode == "Backtest":
         else:
             st.info("Enter **Entry** and **ATR** to see TP/SL and record trades.")
 
-    # Section: Summary (after End Session)
+    # Summary (after End Session)
     if st.session_state.bt["summary_ready"]:
-        # Trades first (exportable)
         raw = pd.DataFrame(st.session_state.bt["trades"])
         if not raw.empty:
             cols = ["ts","result","side","entry","atr","sl_mult","sl","tp","rr","exit_price","pct_gain"]
@@ -316,7 +309,6 @@ if mode == "Backtest":
                 st.dataframe(raw, use_container_width=True)
                 st.download_button("⬇️ Download CSV", raw.to_csv(index=False).encode("utf-8"), "backtest_log.csv", "text/csv")
 
-        # Pie (black, green/red, bold %, legend)
         wins = sum(1 for t in st.session_state.bt["trades"]
                    if (t["result"]=="WIN") or (t["result"]=="CLOSED" and t["pct_gain"]>=0))
         losses = sum(1 for t in st.session_state.bt["trades"]
@@ -324,7 +316,7 @@ if mode == "Backtest":
         with st.container(border=True):
             st.markdown("### **Win / Loss Breakdown**")
             if plt is None:
-                st.error("Matplotlib is required for the styled pie. Add `matplotlib` to requirements.txt.")
+                st.error("Matplotlib required for pie chart.")
             else:
                 fig, ax = plt.subplots()
                 fig.patch.set_facecolor("black")
@@ -341,11 +333,10 @@ if mode == "Backtest":
                           frameon=False, labelcolor="white")
                 st.pyplot(fig, use_container_width=True)
 
-        # Equity curve
         with st.container(border=True):
             st.markdown("### **Equity Curve**")
             if plt is None:
-                st.info("Install matplotlib to view the equity curve.")
+                st.info("Install matplotlib to view equity curve.")
             else:
                 eq = [st.session_state.bt["start_equity"] or 0.0]
                 e = eq[0]
