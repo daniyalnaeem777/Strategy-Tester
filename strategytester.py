@@ -1,8 +1,7 @@
-# tp_sl_calculator.py — TP/SL (Live + Backtest) + PDF report + session persistence (fixed)
-# Notes:
-# - NO CSV download anywhere.
-# - Trades table shows EXACTLY ONE "Serial Number" column (index hidden).
-# - "Extract Report (PDF)" lives right under the Trades table.
+# tp_sl_calculator.py — TP/SL (Live + Backtest) + PDF report + session persistence (clean)
+# - Trades table: HTML-rendered, single "Serial Number" column, centered & bold headers
+# - No CSV download anywhere
+# - "Extract Report (PDF)" lives under the Trades table
 
 import streamlit as st
 from datetime import datetime
@@ -12,7 +11,7 @@ from pathlib import Path
 from io import BytesIO
 from math import sqrt
 
-# ====== Optional libs ======
+# Optional libs
 try:
     import matplotlib.pyplot as plt
 except ModuleNotFoundError:
@@ -27,10 +26,10 @@ try:
 except Exception:
     REPORTLAB_OK = False
 
-# ====== Page ======
+# Page
 st.set_page_config(page_title="TP/SL Calculator", page_icon="📈", layout="wide")
 
-# ====== CSS ======
+# CSS
 st.markdown("""
 <style>
   * { font-family: Helvetica, Arial, sans-serif !important; }
@@ -56,7 +55,7 @@ st.markdown("""
 TP_MULT = 2.0
 DEC = 4
 
-# ====== App State ======
+# App State
 if "bt" not in st.session_state:
     st.session_state.bt = {
         "recording": False,
@@ -70,7 +69,7 @@ if "bt" not in st.session_state:
         "loaded_from": None
     }
 
-# ====== Persistence ======
+# Persistence
 BASE_DIR = Path.cwd() / "sessions"
 BASE_DIR.mkdir(exist_ok=True)
 
@@ -82,28 +81,31 @@ def _session_file_prefix() -> str:
     stamp = st.session_state.bt["stamp"] or datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"{nm}__{stamp}"
 
+def _equity_series_from_trades(start_equity: float, trades: list[dict]) -> list[float]:
+    eq = [start_equity]; e = start_equity
+    for t in trades:
+        e *= (1.0 + (t["pct_gain"]/100.0)); eq.append(e)
+    return eq
+
 def _save_session_files():
-    """Persist trades as CSV + meta (JSON)."""
+    """Persist trades table (CSV) + meta JSON (used only for load/save)."""
     trades = st.session_state.bt["trades"]
     if not trades: return None
     prefix = _session_file_prefix()
     csv_path = BASE_DIR / f"{prefix}.csv"
     meta_path = BASE_DIR / f"{prefix}.json"
 
-    # Build the same table we render (single Serial Number, centered headers when displayed)
     df = pd.DataFrame(trades).copy()
     df.insert(0, "Serial Number", range(1, len(df)+1))
     df = df[[
         "Serial Number","ts","result","side","entry","atr","sl_mult","sl","tp","rr","exit_price","pct_gain"
-    ]]
-    df = df.rename(columns={
+    ]].rename(columns={
         "ts":"Time","result":"Result","side":"Side","entry":"Entry","atr":"ATR",
         "sl_mult":"SL Multiple","sl":"Stop Loss","tp":"Take Profit",
         "rr":"Risk/Return","exit_price":"Exit Price","pct_gain":"% Gain"
     })
     df.to_csv(csv_path, index=False)
 
-    # Meta
     start_eq = st.session_state.bt["start_equity"]
     end_eq = _equity_series_from_trades(start_eq or 0.0, trades)[-1] if trades else start_eq
     meta = {
@@ -132,10 +134,8 @@ def _load_session(prefix: str):
     csv_path = BASE_DIR / f"{prefix}.csv"
     meta_path = BASE_DIR / f"{prefix}.json"
     if not csv_path.exists() or not meta_path.exists():
-        st.error("Saved files not found.")
-        return
-    df = pd.read_csv(csv_path)  # already has Serial Number as first column
-    # Map back to internal names
+        st.error("Saved files not found."); return
+    df = pd.read_csv(csv_path)
     df = df.rename(columns={
         "Time":"ts","Result":"result","Side":"side","Entry":"entry","ATR":"atr",
         "SL Multiple":"sl_mult","Stop Loss":"sl","Take Profit":"tp",
@@ -156,7 +156,7 @@ def _load_session(prefix: str):
     })
     st.success(f"Loaded session: {meta.get('session_name')}")
 
-# ====== Small helpers ======
+# Helpers for calc/record
 def _pct_to_tp_sl(entry, sl, tp, side):
     if side == "Long":
         sl_pct = abs((entry - sl) / entry) * 100.0
@@ -183,7 +183,7 @@ def _log_trade(result_label, side, entry, atr, sl_mult, sl, tp, rr, exit_price, 
     })
 
 def _render_table_html(df: pd.DataFrame):
-    # Render as HTML so we fully control headers + hide index
+    # Pure HTML (no Streamlit DataFrame toolbar, no CSV icon)
     try:
         sty = (
             df.style
@@ -202,20 +202,14 @@ def _render_table_html(df: pd.DataFrame):
         except Exception: pass
     st.markdown(sty.to_html(), unsafe_allow_html=True)
 
-def _equity_series_from_trades(start_equity: float, trades: list[dict]) -> list[float]:
-    eq = [start_equity]; e = start_equity
-    for t in trades:
-        e *= (1.0 + (t["pct_gain"]/100.0)); eq.append(e)
-    return eq
-
-# ====== Header ======
+# Header
 st.markdown("# TP/SL Calculator")
 st.markdown(
     "<div class='subtitle'>Live & Backtest • Realistic Compounding • Precision-Engineered Strategy Execution</div>",
     unsafe_allow_html=True
 )
 
-# ====== Load Saved Session ======
+# Load saved session
 with st.container(border=True):
     st.markdown("### **Saved Sessions**")
     saved = _list_saved_sessions()
@@ -224,14 +218,13 @@ with st.container(border=True):
         sel = st.selectbox("Load a previous backtest", [s[0] for s in saved], index=None, placeholder="Select…")
     with right:
         if st.button("Load", use_container_width=True, disabled=(sel is None)):
-            prefix = dict(saved)[sel]
-            _load_session(prefix)
+            prefix = dict(saved)[sel]; _load_session(prefix)
 
-# ====== Mode ======
+# Mode
 with st.container(border=True):
     mode = st.radio("Mode", ["Live", "Backtest"], horizontal=True, key="mode_radio")
 
-# ====== LIVE MODE ======
+# LIVE
 if mode == "Live":
     with st.container(border=True):
         st.markdown("### **Direction**")
@@ -283,7 +276,7 @@ if mode == "Live":
                 with c:
                     st.markdown("**Reward : Risk**"); st.info(f"**{rr:.2f} : 1**")
 
-# ====== BACKTEST MODE ======
+# BACKTEST
 if mode == "Backtest":
     with st.container(border=True):
         st.markdown("### **Backtesting Controls**")
@@ -400,7 +393,7 @@ if mode == "Backtest":
                              disabled=not st.session_state.bt["recording"], key="rec_loss"):
                     calc = st.session_state.bt["last_calc"]
                     _compound(-(calc["sl_pct"]/100.0))
-                    _log_trade("LOSS", calc["side"], calc["entry"], calc["atr"], calc["sl_mult"],
+                    _log_trade("LOSS", calc["side"], calc["entry"], calc["sl_mult"],
                                calc["sl"], calc["tp"], calc["rr"], None, -calc["sl_pct"])
                     st.warning("Recorded full SL loss.")
             with r3:
@@ -418,11 +411,10 @@ if mode == "Backtest":
         else:
             st.info("Enter **Entry** and **ATR** to see TP/SL and record trades.")
 
-    # ====== Summary ======
+    # ===== Summary (after End Session) =====
     if st.session_state.bt["summary_ready"]:
         raw_internal = pd.DataFrame(st.session_state.bt["trades"])
         if not raw_internal.empty:
-            # Build display table ONCE (single Serial Number)
             raw = raw_internal.copy()
             raw.insert(0, "Serial Number", range(1, len(raw) + 1))
             raw = raw[[
@@ -436,18 +428,16 @@ if mode == "Backtest":
 
             with st.container(border=True):
                 st.markdown("### **Trades**")
-                _render_table_html(raw)  # HTML table (index hidden). NO CSV BUTTON.
+                _render_table_html(raw)   # HTML-rendered (no toolbar, no CSV)
 
-                # Win/Loss
                 wins = (raw_internal["pct_gain"] >= 0).sum()
                 losses = (raw_internal["pct_gain"] < 0).sum()
 
-                # ---- Extract Report (PDF) button only ----
+                # Only action under Trades
                 if st.button("Extract Report (PDF)", use_container_width=True, key="extract_pdf_here"):
                     if not REPORTLAB_OK or plt is None:
                         st.error("Please add `reportlab` and `matplotlib` to requirements.txt to export PDF.")
                     else:
-                        # Build figures/data for PDF
                         start_eq = float(st.session_state.bt["start_equity"] or 0.0)
                         session_name = _safe_name(st.session_state.bt["session_name"])
                         stamp = st.session_state.bt.get("stamp") or datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -463,10 +453,9 @@ if mode == "Backtest":
                             sd = var**0.5
                             sharpe = (mu/sd * (len(rets)**0.5)) if sd > 0 else 0.0
 
-                        # Equity series
+                        # Figures (white for PDF)
                         eq_vals = _equity_series_from_trades(start_eq, st.session_state.bt["trades"])
 
-                        # Pie
                         fig_pie, axp = plt.subplots(figsize=(7,4))
                         fig_pie.patch.set_facecolor("white"); axp.set_facecolor("white")
                         wedges, _, _ = axp.pie([wins, losses], colors=["#00c853","#ff1744"],
@@ -476,19 +465,16 @@ if mode == "Backtest":
                         axp.legend(wedges, ["Wins","Losses"], loc="center left", bbox_to_anchor=(1.02, 0.5))
                         pie_buf = BytesIO(); fig_pie.savefig(pie_buf, format="png", bbox_inches="tight", dpi=200); plt.close(fig_pie); pie_buf.seek(0)
 
-                        # Equity curve
                         fig_eq, axe = plt.subplots(figsize=(10,3.5))
                         fig_eq.patch.set_facecolor("white"); axe.set_facecolor("white")
                         axe.plot(range(len(eq_vals)), eq_vals, marker='o')
                         axe.set_xlabel("Number of Trades"); axe.set_ylabel("Account Size"); axe.grid(alpha=0.25)
                         eq_buf = BytesIO(); fig_eq.savefig(eq_buf, format="png", bbox_inches="tight", dpi=200); plt.close(fig_eq); eq_buf.seek(0)
 
-                        # Table rows for PDF (exactly as displayed)
                         rows = [list(raw.columns)]
                         for _, r in raw.iterrows():
                             rows.append([r[c] for c in raw.columns])
 
-                        # PDF
                         pdf_buf = BytesIO()
                         doc = SimpleDocTemplate(pdf_buf, leftMargin=18, rightMargin=18, topMargin=18, bottomMargin=18)
                         styles = getSampleStyleSheet()
@@ -503,7 +489,6 @@ if mode == "Backtest":
                         story.append(Paragraph("Backtesting Performance Metrics", h_center))
                         story.append(Spacer(0, 6))
 
-                        # Table FIRST
                         story.append(Paragraph("Trades", h_sub))
                         tbl = Table(rows, repeatRows=1)
                         tbl.setStyle(TableStyle([
@@ -519,7 +504,6 @@ if mode == "Backtest":
                         story.append(tbl)
                         story.append(Spacer(0, 10))
 
-                        # KPIs
                         end_eq = eq_vals[-1] if eq_vals else start_eq
                         kpis = (
                             f"Session: <b>{st.session_state.bt['session_name'] or 'Session'}</b><br/>"
@@ -531,14 +515,12 @@ if mode == "Backtest":
                         story.append(Paragraph(kpis, body))
                         story.append(Spacer(0, 8))
 
-                        # Pie
                         story.append(Paragraph("Win / Loss Breakdown", h_sub))
                         story.append(RLImage(pie_buf, width=450, height=250))
                         story.append(Spacer(0, 6))
                         story.append(Paragraph("Legend: Green = Wins, Red = Losses.", body))
                         story.append(Spacer(0, 8))
 
-                        # Equity
                         story.append(Paragraph("Equity Curve", h_sub))
                         story.append(RLImage(eq_buf, width=500, height=170))
                         story.append(Spacer(0, 6))
@@ -550,36 +532,36 @@ if mode == "Backtest":
                                            mime="application/pdf",
                                            use_container_width=True)
 
-        # ====== In-app charts ======
-        wins = sum(1 for t in st.session_state.bt["trades"] if t["pct_gain"] >= 0)
-        losses = sum(1 for t in st.session_state.bt["trades"] if t["pct_gain"] < 0)
+    # Charts (display)
+    wins = sum(1 for t in st.session_state.bt["trades"] if t["pct_gain"] >= 0)
+    losses = sum(1 for t in st.session_state.bt["trades"] if t["pct_gain"] < 0)
 
-        with st.container(border=True):
-            st.markdown("### **Win / Loss Breakdown**")
-            if plt is None:
-                st.error("Matplotlib required for pie chart.")
-            else:
-                fig, ax = plt.subplots(figsize=(12, 6))
-                fig.patch.set_facecolor("black"); ax.set_facecolor("black")
-                fig.subplots_adjust(left=0.05, right=0.78, top=0.95, bottom=0.06)
-                wedges, _, _ = ax.pie([wins, losses], labels=None,
-                                      colors=["#00c853", "#ff1744"],
-                                      autopct=lambda p: f"{p:.1f}%",
-                                      startangle=90,
-                                      textprops={"color":"white","weight":"bold"})
-                ax.axis("equal")
-                ax.legend(wedges, ["Wins","Losses"], loc="center left",
-                          bbox_to_anchor=(1.02, 0.5), frameon=False, labelcolor="white")
-                st.pyplot(fig, use_container_width=True)
+    with st.container(border=True):
+        st.markdown("### **Win / Loss Breakdown**")
+        if plt is None:
+            st.error("Matplotlib required for pie chart.")
+        else:
+            fig, ax = plt.subplots(figsize=(12, 6))
+            fig.patch.set_facecolor("black"); ax.set_facecolor("black")
+            fig.subplots_adjust(left=0.05, right=0.78, top=0.95, bottom=0.06)
+            wedges, _, _ = ax.pie([wins, losses], labels=None,
+                                  colors=["#00c853", "#ff1744"],
+                                  autopct=lambda p: f"{p:.1f}%",
+                                  startangle=90,
+                                  textprops={"color":"white","weight":"bold"})
+            ax.axis("equal")
+            ax.legend(wedges, ["Wins","Losses"], loc="center left",
+                      bbox_to_anchor=(1.02, 0.5), frameon=False, labelcolor="white")
+            st.pyplot(fig, use_container_width=True)
 
-        with st.container(border=True):
-            st.markdown("### **Equity Curve**")
-            if plt is None:
-                st.info("Install matplotlib to view equity curve.")
-            else:
-                eq = _equity_series_from_trades(float(st.session_state.bt["start_equity"] or 0.0),
-                                                st.session_state.bt["trades"])
-                fig2, ax2 = plt.subplots(figsize=(12, 4))
-                ax2.plot(range(len(eq)), eq, marker='o')
-                ax2.set_xlabel("Trades"); ax2.set_ylabel("Account Value"); ax2.grid(alpha=0.25)
-                st.pyplot(fig2, use_container_width=True)
+    with st.container(border=True):
+        st.markdown("### **Equity Curve**")
+        if plt is None:
+            st.info("Install matplotlib to view equity curve.")
+        else:
+            eq = _equity_series_from_trades(float(st.session_state.bt["start_equity"] or 0.0),
+                                            st.session_state.bt["trades"])
+            fig2, ax2 = plt.subplots(figsize=(12, 4))
+            ax2.plot(range(len(eq)), eq, marker='o')
+            ax2.set_xlabel("Trades"); ax2.set_ylabel("Account Value"); ax2.grid(alpha=0.25)
+            st.pyplot(fig2, use_container_width=True)
