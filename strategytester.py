@@ -1,161 +1,532 @@
+# tp_sl_calculator.py — TP/SL (Live + Backtest) + PDF report (final)
+# Long:  SL = Entry − (SL_mult × ATR)   |   TP = Entry + (2.0 × ATR)
+# Short: SL = Entry + (SL_mult × ATR)   |   TP = Entry − (2.0 × ATR)
+
 import streamlit as st
+from datetime import datetime
 import pandas as pd
-import matplotlib.pyplot as plt
-import uuid
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
-from reportlab.lib import colors
-import io
 
-# Streamlit UI setup
-st.set_page_config(page_title="Backtest Logger", layout="wide")
-st.title("📊 Backtest Logger")
-st.markdown("### Live & Backtest • Realistic Compounding • Precision-Engineered Strategy Execution")
+# Charts
+try:
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError:
+    plt = None
 
-# Session State Initialization
-if "trades" not in st.session_state:
-    st.session_state.trades = []
-if "equity" not in st.session_state:
-    st.session_state.equity = 100  # Starting equity
+# PDF (reportlab)
+from io import BytesIO
+from math import sqrt
+try:
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
+    from reportlab.lib import colors
+    REPORTLAB_OK = True
+except Exception:
+    REPORTLAB_OK = False
 
-# Trade Entry
-with st.expander("➕ Enter New Trade"):
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        side = st.selectbox("Trade Direction", ["Long", "Short"])
-        entry_price = st.number_input("Entry Price", min_value=0.0, value=3500.0)
-    with col2:
-        atr = st.number_input("ATR", min_value=0.0, value=100.0)
-        sl_multiple = st.number_input("SL Multiple", min_value=0.1, value=1.0)
-    with col3:
-        rr = st.number_input("Reward:Risk", min_value=0.1, value=2.0)
+# ---------- Page (wide so charts are large) ----------
+st.set_page_config(page_title="TP/SL Calculator", page_icon="📈", layout="wide")
 
-    if st.button("Calculate"):
-        if side == "Long":
-            sl = entry_price - atr * sl_multiple
-            tp = entry_price + atr * sl_multiple * rr
+# ---------- CSS ----------
+st.markdown("""
+<style>
+  * { font-family: Helvetica, Arial, sans-serif !important; }
+  h1,h2,h3,h4,strong,b { font-weight: 700 !important; letter-spacing:.2px; }
+  .subtitle { font-style: italic; margin-top:-6px; margin-bottom:14px; }
+
+  /* One clean rounded rectangle per section */
+  [data-testid="stContainer"] > div[style*="border: 1px solid"] {
+    border: 1px solid rgba(255,255,255,0.85) !important;
+    border-radius: 14px !important;
+    padding: 12px 16px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .chip {
+    display:inline-block; padding:6px 10px; border-radius:999px;
+    border:1px solid rgba(255,255,255,0.14); margin-right:8px;
+  }
+  .boldlabel label > div:first-child { font-weight: 700 !important; }
+  .stNumberInput > div > div > input { font-weight:700; }
+</style>
+""", unsafe_allow_html=True)
+
+TP_MULT = 2.0
+DEC = 4
+
+# ---------- State ----------
+if "bt" not in st.session_state:
+    st.session_state.bt = {
+        "recording": False,
+        "start_equity": None,
+        "equity": None,
+        "trades": [],
+        "last_calc": None,
+        "summary_ready": False,
+    }
+
+# ---------- Helpers ----------
+def _pct_to_tp_sl(entry, sl, tp, side):
+    if side == "Long":
+        sl_pct = abs((entry - sl) / entry) * 100.0
+        tp_pct = abs((tp - entry) / entry) * 100.0
+    else:
+        sl_pct = abs((sl - entry) / entry) * 100.0
+        tp_pct = abs((entry - tp) / entry) * 100.0
+    return sl_pct, tp_pct
+
+def _pct_from_exit(entry, exit_price, side):
+    return ((exit_price - entry) / entry) * 100.0 if side == "Long" else ((entry - exit_price) / entry) * 100.0
+
+def _compound(dec_pct):
+    if st.session_state.bt["equity"] is None:
+        st.warning("Start a backtesting session first.")
+        return
+    st.session_state.bt["equity"] *= (1.0 + dec_pct)
+
+def _log_trade(result_label, side, entry, atr, sl_mult, sl, tp, rr, exit_price, pct_gain):
+    st.session_state.bt["trades"].append({
+        "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "result": result_label,
+        "side": side,
+        "entry": entry,
+        "atr": atr,
+        "sl_mult": sl_mult,
+        "sl": sl,
+        "tp": tp,
+        "rr": rr,
+        "exit_price": exit_price,
+        "pct_gain": pct_gain,
+    })
+
+# ---------- Title ----------
+st.markdown("# TP/SL Calculator")
+st.markdown(
+    "<div class='subtitle'>Live & Backtest • Realistic Compounding • Precision-Engineered Strategy Execution</div>",
+    unsafe_allow_html=True
+)
+
+# ================== SECTION 1: Mode ==================
+with st.container(border=True):
+    mode = st.radio("Mode", ["Live", "Backtest"], horizontal=True, key="mode_radio")
+
+# ================== LIVE MODE ==================
+if mode == "Live":
+
+    with st.container(border=True):
+        st.markdown("### **Direction**")
+        st.markdown("<div class='boldlabel'>", unsafe_allow_html=True)
+        side_live = st.radio("Direction", ["Long", "Short"], horizontal=True, label_visibility="collapsed", key="live_dir")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with st.container(border=True):
+        st.markdown("### **SL Multiple**")
+        sl_choice_live = st.radio("SL × ATR", ["1.0", "1.5"], horizontal=True, label_visibility="collapsed", key="live_sl")
+        sl_mult_live = 1.0 if sl_choice_live == "1.0" else 1.5
+        st.markdown(
+            f"<span class='chip'>Current SL = {sl_mult_live} × ATR</span>"
+            f"<span class='chip'>TP = {TP_MULT} × ATR</span>",
+            unsafe_allow_html=True
+        )
+
+    with st.container(border=True):
+        c1, c2 = st.columns(2)
+        with c1:
+            entry_live = st.number_input("Entry Price", min_value=0.0, format=f"%.{DEC}f", key="live_entry")
+        with c2:
+            atr_live = st.number_input("ATR (14)", min_value=0.0, format=f"%.{DEC}f", key="live_atr")
+
+    with st.container(border=True):
+        if st.button("Calculate", key="calc_live"):
+            if entry_live <= 0 or atr_live <= 0:
+                st.error("Please enter positive numbers for Entry and ATR.")
+            else:
+                if side_live == "Long":
+                    sl = entry_live - sl_mult_live * atr_live
+                    tp = entry_live + TP_MULT * atr_live
+                    rr = (tp - entry_live) / max(entry_live - sl, 1e-12)
+                    dsl, dtp = entry_live - sl, tp - entry_live
+                else:
+                    sl = entry_live + sl_mult_live * atr_live
+                    tp = entry_live - TP_MULT * atr_live
+                    rr = (entry_live - tp) / max(sl - entry_live, 1e-12)
+                    dsl, dtp = sl - entry_live, entry_live - tp
+
+                sl_pct, tp_pct = _pct_to_tp_sl(entry_live, sl, tp, side_live)
+                a, b, c = st.columns([1,1,1])
+                with a:
+                    st.markdown("**Stop Loss**")
+                    st.error(f"**{sl:.{DEC}f}**")
+                    st.caption(f"Δ {dsl:.{DEC}f} ({sl_pct:.2f}%)")
+                with b:
+                    st.markdown("**Take Profit**")
+                    st.success(f"**{tp:.{DEC}f}**")
+                    st.caption(f"Δ {dtp:.{DEC}f} ({tp_pct:.2f}%)")
+                with c:
+                    st.markdown("**Reward : Risk**")
+                    st.info(f"**{rr:.2f} : 1**")
+
+# ================== BACKTEST MODE ==================
+if mode == "Backtest":
+
+    with st.container(border=True):
+        st.markdown("### **Backtesting Controls**")
+        start_equity = st.number_input(
+            "Account Size (Starting Equity)",
+            min_value=0.0,
+            value=float(st.session_state.bt["start_equity"] or 0.0),
+            step=100.0,
+            format="%.2f",
+        )
+        start_clicked = st.button("Start Session", use_container_width=True, key="start_bt")
+        end_clicked   = st.button("End Session",   use_container_width=True, key="end_bt")
+
+        if start_clicked:
+            if start_equity <= 0:
+                st.error("Please enter a positive account size.")
+            else:
+                st.session_state.bt.update({
+                    "recording": True,
+                    "start_equity": start_equity,
+                    "equity": start_equity,
+                    "trades": [],
+                    "summary_ready": False,
+                    "last_calc": None,
+                })
+                st.success("Backtesting started.")
+
+        if end_clicked:
+            if st.session_state.bt["recording"]:
+                st.session_state.bt["recording"] = False
+                st.session_state.bt["summary_ready"] = True
+                st.info("Backtesting ended. Summary below.")
+            else:
+                st.info("No active session to end.")
+
+    with st.container(border=True):
+        # Direction
+        st.markdown("**Direction**")
+        st.markdown("<div class='boldlabel'>", unsafe_allow_html=True)
+        side = st.radio("Direction", ["Long", "Short"], horizontal=True, label_visibility="collapsed", key="bt_dir")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # SL Multiple
+        st.markdown("**SL Multiple**")
+        sl_choice = st.radio("SL × ATR", ["1.0", "1.5"], horizontal=True, label_visibility="collapsed", key="bt_sl")
+        sl_mult = 1.0 if sl_choice == "1.0" else 1.5
+        st.markdown(
+            f"<span class='chip'>Current SL = {sl_mult} × ATR</span>"
+            f"<span class='chip'>TP = {TP_MULT} × ATR</span>",
+            unsafe_allow_html=True
+        )
+
+        # Entry + ATR
+        c1, c2 = st.columns(2)
+        with c1:
+            entry = st.number_input("Entry Price", min_value=0.0, format=f"%.{DEC}f", key="bt_entry")
+        with c2:
+            atr = st.number_input("ATR (14)", min_value=0.0, format=f"%.{DEC}f", key="bt_atr")
+
+        if entry > 0 and atr > 0:
+            if side == "Long":
+                sl = entry - sl_mult * atr
+                tp = entry + TP_MULT * atr
+                rr = (tp - entry) / max(entry - sl, 1e-12)
+                dsl, dtp = entry - sl, tp - entry
+            else:
+                sl = entry + sl_mult * atr
+                tp = entry - TP_MULT * atr
+                rr = (entry - tp) / max(sl - entry, 1e-12)
+                dsl, dtp = sl - entry, entry - tp
+
+            sl_pct, tp_pct = _pct_to_tp_sl(entry, sl, tp, side)
+
+            a, b, c = st.columns([1,1,1])
+            with a:
+                st.markdown("**Stop Loss**")
+                st.error(f"**{sl:.{DEC}f}**")
+                st.caption(f"Δ {dsl:.{DEC}f} ({sl_pct:.2f}%)")
+            with b:
+                st.markdown("**Take Profit**")
+                st.success(f"**{tp:.{DEC}f}**")
+                st.caption(f"Δ {dtp:.{DEC}f} ({tp_pct:.2f}%)")
+            with c:
+                st.markdown("**Reward : Risk**")
+                st.info(f"**{rr:.2f} : 1**")
+
+            # Snapshot for record buttons
+            st.session_state.bt["last_calc"] = {
+                "side": side, "entry": entry, "atr": atr,
+                "sl_mult": sl_mult, "sl": sl, "tp": tp, "rr": rr,
+                "sl_pct": sl_pct, "tp_pct": tp_pct
+            }
+
+            st.markdown("---")
+            st.markdown("**Record Trade**")
+            exit_price = st.number_input("Exit Price (for Closed at 'Selected Price')",
+                                         min_value=0.0, format=f"%.{DEC}f", key="bt_exit")
+
+            r1, r2, r3 = st.columns(3)
+            with r1:
+                if st.button("Record Win ✅", use_container_width=True,
+                             disabled=not st.session_state.bt["recording"], key="rec_win"):
+                    calc = st.session_state.bt["last_calc"]
+                    _compound(calc["tp_pct"] / 100.0)
+                    _log_trade("WIN", calc["side"], calc["entry"], calc["atr"], calc["sl_mult"],
+                               calc["sl"], calc["tp"], calc["rr"], None, calc["tp_pct"])
+                    st.success("Recorded full TP win.")
+            with r2:
+                if st.button("Record Loss ❌", use_container_width=True,
+                             disabled=not st.session_state.bt["recording"], key="rec_loss"):
+                    calc = st.session_state.bt["last_calc"]
+                    _compound(-(calc["sl_pct"] / 100.0))
+                    _log_trade("LOSS", calc["side"], calc["entry"], calc["atr"], calc["sl_mult"],
+                               calc["sl"], calc["tp"], calc["rr"], None, -calc["sl_pct"])
+                    st.warning("Recorded full SL loss.")
+            with r3:
+                if st.button("Closed at 'Selected Price'", use_container_width=True,
+                             disabled=not st.session_state.bt["recording"], key="rec_closed"):
+                    if exit_price <= 0:
+                        st.error("Enter a valid Exit Price.")
+                    else:
+                        calc = st.session_state.bt["last_calc"]
+                        pct = _pct_from_exit(calc["entry"], exit_price, calc["side"])
+                        _compound(pct / 100.0)
+                        _log_trade("CLOSED", calc["side"], calc["entry"], calc["atr"], calc["sl_mult"],
+                                   calc["sl"], calc["tp"], calc["rr"], exit_price, pct)
+                        st.info(f"Recorded CLOSED at {exit_price:.{DEC}f} "
+                                f"({'▲' if pct>=0 else '▼'}{abs(pct):.2f}%).")
         else:
-            sl = entry_price + atr * sl_multiple
-            tp = entry_price - atr * sl_multiple * rr
+            st.info("Enter **Entry** and **ATR** to see TP/SL and record trades.")
 
-        reward = abs(tp - entry_price)
-        risk = abs(entry_price - sl)
-        rr_ratio = round(reward / risk, 2)
+    # Summary (after End Session)
+    if st.session_state.bt["summary_ready"]:
+        raw = pd.DataFrame(st.session_state.bt["trades"])
+        if not raw.empty:
+            cols = ["ts","result","side","entry","atr","sl_mult","sl","tp","rr","exit_price","pct_gain"]
+            raw = raw[[c for c in cols if c in raw.columns]].copy()
+            raw.insert(0, "Serial Number", range(1, len(raw)+1))
+            raw = raw.rename(columns={
+                "ts":"Time", "result":"Result", "side":"Side", "entry":"Entry", "atr":"ATR",
+                "sl_mult":"SL Multiple", "sl":"Stop Loss", "tp":"Take Profit", "rr":"Risk/Return",
+                "exit_price":"Exit Price", "pct_gain":"% Gain"
+            })
+            with st.container(border=True):
+                st.markdown("### **Trades**")
+                st.dataframe(raw, use_container_width=True)
+                st.download_button("⬇️ Download CSV", raw.to_csv(index=False).encode("utf-8"),
+                                   "backtest_log.csv", "text/csv")
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.markdown("#### Stop Loss")
-            st.markdown(f"<div style='background-color:#3b2326;padding:1.5em;border-radius:10px'><h3 style='color:#f08080'>{sl:.4f}</h3></div>", unsafe_allow_html=True)
-            st.markdown(f"<span style='color:gray'>Δ {abs(entry_price - sl):.4f} ({abs((entry_price - sl) / entry_price * 100):.2f}%)</span>", unsafe_allow_html=True)
-        with col2:
-            st.markdown("#### Take Profit")
-            st.markdown(f"<div style='background-color:#21372b;padding:1.5em;border-radius:10px'><h3 style='color:#90ee90'>{tp:.4f}</h3></div>", unsafe_allow_html=True)
-            st.markdown(f"<span style='color:gray'>Δ {abs(entry_price - tp):.4f} ({abs((tp - entry_price) / entry_price * 100):.2f}%)</span>", unsafe_allow_html=True)
-        with col3:
-            st.markdown("#### Reward : Risk")
-            st.markdown(f"<div style='background-color:#1e2b40;padding:1.5em;border-radius:10px'><h3 style='color:#6495ED'>{rr_ratio:.2f} : 1</h3></div>", unsafe_allow_html=True)
+        wins = sum(1 for t in st.session_state.bt["trades"]
+                   if (t["result"]=="WIN") or (t["result"]=="CLOSED" and t["pct_gain"]>=0))
+        losses = sum(1 for t in st.session_state.bt["trades"]
+                     if (t["result"]=="LOSS") or (t["result"]=="CLOSED" and t["pct_gain"]<0))
 
-# Record Trade
-st.subheader("📈 Record Trade")
-exit_price = st.number_input("Exit Price (for 'Closed At Selected Price')", min_value=0.0, value=0.0)
-col1, col2, col3 = st.columns(3)
+        with st.container(border=True):
+            st.markdown("### **Win / Loss Breakdown**")
+            if plt is None:
+                st.error("Matplotlib required for pie chart.")
+            else:
+                values = [wins, losses]
+                labels = ["Wins", "Losses"]
+                colors = ["#00c853", "#ff1744"]  # green, red
 
-if col1.button("Record Win ✅"):
-    change = abs(tp - entry_price)
-    pct_gain = round(change / entry_price * 100, 4)
-    st.session_state.trades.append({"Side": side, "Entry": entry_price, "ATR": atr, "SL_MULTIPLE": sl_multiple, "SL": sl, "TP": tp, "Risk/Return": rr, "Exit Price": tp, "Pct Gain %": pct_gain})
-    st.session_state.equity += pct_gain
+                # Bigger figure + reserved space for legend outside
+                fig, ax = plt.subplots(figsize=(12, 6))
+                fig.patch.set_facecolor("black")
+                ax.set_facecolor("black")
+                fig.subplots_adjust(left=0.05, right=0.78, top=0.95, bottom=0.06)
 
-if col2.button("Record Loss ❌"):
-    change = abs(entry_price - sl)
-    pct_loss = -round(change / entry_price * 100, 4)
-    st.session_state.trades.append({"Side": side, "Entry": entry_price, "ATR": atr, "SL_MULTIPLE": sl_multiple, "SL": sl, "TP": tp, "Risk/Return": rr, "Exit Price": sl, "Pct Gain %": pct_loss})
-    st.session_state.equity += pct_loss
+                wedges, _, _ = ax.pie(
+                    values,
+                    labels=None,  # legend handles labels
+                    colors=colors,
+                    autopct=lambda p: f"{p:.1f}%",
+                    startangle=90,
+                    textprops={"color": "white", "weight": "bold"}
+                )
+                ax.axis("equal")
+                ax.legend(
+                    wedges, labels,
+                    loc="center left",
+                    bbox_to_anchor=(1.02, 0.5),
+                    frameon=False,
+                    labelcolor="white"
+                )
+                st.pyplot(fig, use_container_width=True)
 
-if col3.button("Closed At Selected Price"):
-    change = exit_price - entry_price if side == "Long" else entry_price - exit_price
-    pct_change = round(change / entry_price * 100, 4)
-    st.session_state.trades.append({"Side": side, "Entry": entry_price, "ATR": atr, "SL_MULTIPLE": sl_multiple, "SL": sl, "TP": tp, "Risk/Return": rr, "Exit Price": exit_price, "Pct Gain %": pct_change})
-    st.session_state.equity += pct_change
+        with st.container(border=True):
+            st.markdown("### **Equity Curve**")
+            if plt is None:
+                st.info("Install matplotlib to view equity curve.")
+            else:
+                eq = [st.session_state.bt["start_equity"] or 0.0]
+                e = eq[0]
+                for t in st.session_state.bt["trades"]:
+                    e *= (1.0 + (t["pct_gain"]/100.0))
+                    eq.append(e)
 
-# Trade Metrics
-st.subheader("📊 Win / Loss Breakdown")
-df = pd.DataFrame(st.session_state.trades)
-if not df.empty:
-    win_count = (df["Pct Gain %"] > 0).sum()
-    loss_count = (df["Pct Gain %"] <= 0).sum()
-    total = len(df)
+                fig2, ax2 = plt.subplots(figsize=(12, 4))
+                ax2.plot(range(len(eq)), eq, marker='o')
+                ax2.set_xlabel("Trades")
+                ax2.set_ylabel("Account Value")
+                ax2.grid(alpha=0.25)
+                st.pyplot(fig2, use_container_width=True)
 
-    pie_fig, ax = plt.subplots(figsize=(4, 4))
-    ax.pie([win_count, loss_count], labels=["Win", "Loss"], autopct="%1.1f%%", startangle=90, colors=["green", "red"])
-    st.pyplot(pie_fig)
+# ================= PDF REPORT (Extract Report) =================
 
-    st.subheader("📈 Equity Curve")
-    df["Equity"] = 100 + df["Pct Gain %"].cumsum()
-    eq_fig, ax2 = plt.subplots(figsize=(10, 4))
-    ax2.plot(df.index + 1, df["Equity"], marker='o')
-    ax2.set_xlabel("Trade Number")
-    ax2.set_ylabel("Equity")
-    st.pyplot(eq_fig)
+def _equity_series_from_trades(start_equity, trades):
+    eq = [start_equity]
+    e = start_equity
+    for t in trades:
+        e *= (1.0 + (t["pct_gain"] / 100.0))
+        eq.append(e)
+    return eq
 
-    st.subheader("📋 Trades")
-    st.dataframe(df.style.format({"Pct Gain %": "{:.4f}"}))
+def _save_fig_to_buf(fig):
+    buf = BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight", dpi=200)
+    plt.close(fig)
+    buf.seek(0)
+    return buf
 
-    csv = df.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 Download CSV", csv, "trades.csv", "text/csv")
+def _build_equity_fig(eq):
+    fig, ax = plt.subplots(figsize=(10, 3.5))
+    ax.plot(range(len(eq)), eq, marker='o')
+    ax.set_xlabel("Trades")
+    ax.set_ylabel("Account Value")
+    ax.grid(alpha=0.25)
+    return fig
 
-    # PDF EXPORT
-    def generate_pdf():
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter,
-                                leftMargin=40, rightMargin=40, topMargin=50, bottomMargin=40)
-        styles = getSampleStyleSheet()
-        elements = []
-        title_style = ParagraphStyle('CenterTitle', parent=styles['Title'], alignment=1, fontName='Helvetica', fontSize=12)
-        elements.append(Paragraph("Trade Metrics", title_style))
-        elements.append(Spacer(1, 12))
+def _build_pie_fig(wins, losses):
+    fig, ax = plt.subplots(figsize=(7, 4))
+    fig.patch.set_facecolor("white")     # white for PDF
+    ax.set_facecolor("white")
+    wedges, _, _ = ax.pie(
+        [wins, losses],
+        colors=["#00c853", "#ff1744"],
+        autopct=lambda p: f"{p:.1f}%",
+        startangle=90,
+        textprops={"color":"black","weight":"bold"}
+    )
+    ax.axis("equal")
+    ax.legend(wedges, ["Wins","Losses"], loc="center left", bbox_to_anchor=(1.02, 0.5))
+    return fig
 
-        # Add equity curve image
-        eq_buf = io.BytesIO()
-        eq_fig.savefig(eq_buf, format='png')
-        eq_buf.seek(0)
-        elements.append(RLImage(eq_buf, width=6*inch, height=2.5*inch))
-        elements.append(Spacer(1, 12))
+def _sharpe_per_trade(trades):
+    rets = [t["pct_gain"]/100.0 for t in trades]
+    if len(rets) == 0:
+        return 0.0
+    mu = sum(rets) / len(rets)
+    var = sum((r - mu)**2 for r in rets) / max(len(rets)-1, 1)
+    sd = var**0.5
+    return (mu / sd * sqrt(len(rets))) if sd > 0 else 0.0
 
-        # Add trade table
-        table_data = [["#", "Trade Direction", "Result", "% Gain/Loss", "Equity Δ"]]
-        for i, row in df.iterrows():
-            result = "Win" if row["Pct Gain %"] > 0 else "Loss"
-            table_data.append([i+1, row["Side"], result, f"{row['Pct Gain %']:.2f}%", f"{row['Equity'] - 100:.2f}"])
+with st.container(border=True):
+    if st.button("Extract Report (PDF)", use_container_width=True, key="btn_pdf"):
+        if not REPORTLAB_OK or plt is None:
+            st.error("Please add `reportlab` and `matplotlib` to requirements.txt to export PDF.")
+        else:
+            trades = st.session_state.bt["trades"]
+            start_eq = float(st.session_state.bt["start_equity"] or 0.0)
+            eq = _equity_series_from_trades(start_eq, trades)
+            total_trades = len(trades)
+            wins_ct = sum(1 for t in trades if (t["result"]=="WIN") or (t["result"]=="CLOSED" and t["pct_gain"]>=0))
+            losses_ct = sum(1 for t in trades if (t["result"]=="LOSS") or (t["result"]=="CLOSED" and t["pct_gain"]<0))
+            win_ratio = (wins_ct / total_trades * 100.0) if total_trades > 0 else 0.0
+            sharpe = _sharpe_per_trade(trades)
 
-        table = Table(table_data, repeatRows=1)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.gray),
-            ('TEXTCOLOR',(0,0),(-1,0),colors.whitesmoke),
-            ('ALIGN',(0,0),(-1,-1),'CENTER'),
-            ('FONTSIZE', (0,0), (-1,-1), 10),
-            ('BOTTOMPADDING', (0,0), (-1,0), 12),
-            ('BACKGROUND',(0,1),(-1,-1),colors.beige),
-            ('GRID', (0,0), (-1,-1), 1, colors.black)
-        ]))
-        elements.append(table)
+            # Figures for PDF (white bg)
+            fig_eq = _build_equity_fig(eq)
+            buf_eq = _save_fig_to_buf(fig_eq)
+            fig_pie = _build_pie_fig(wins_ct, losses_ct)
+            buf_pie = _save_fig_to_buf(fig_pie)
 
-        # Summary Metrics
-        summary = f"Total Trades: {total}, Win Rate: {win_count}/{total} ({win_count/total*100:.2f}%)"
-        elements.append(Spacer(1, 12))
-        elements.append(Paragraph(summary, styles['Normal']))
+            # Table rows for PDF
+            rows = [["Serial Number", "Trade Direction", "Win/Loss", "% Gain/Loss", "Δ Equity"]]
+            running = start_eq
+            for i, t in enumerate(trades, start=1):
+                pct = t["pct_gain"]
+                delta_eq = running * (pct/100.0)
+                running = running * (1.0 + pct/100.0)
+                rows.append([
+                    i,
+                    t["side"],
+                    "WIN" if (t["result"]=="WIN" or (t["result"]=="CLOSED" and pct>=0)) else "LOSS",
+                    f"{pct:.2f}%",
+                    f"{delta_eq:+.2f}"
+                ])
 
-        # Add pie chart image
-        pie_buf = io.BytesIO()
-        pie_fig.savefig(pie_buf, format='png')
-        pie_buf.seek(0)
-        elements.append(Spacer(1, 12))
-        elements.append(RLImage(pie_buf, width=3*inch, height=3*inch))
+            # Build PDF (Helvetica 12, narrow margins, justified, centered title)
+            pdf_buf = BytesIO()
+            doc = SimpleDocTemplate(
+                pdf_buf,
+                leftMargin=18, rightMargin=18, topMargin=18, bottomMargin=18  # ~0.25"
+            )
+            styles = getSampleStyleSheet()
+            body = ParagraphStyle(
+                "Body", parent=styles["Normal"], fontName="Helvetica",
+                fontSize=12, leading=15, alignment=TA_JUSTIFY
+            )
+            h_center = ParagraphStyle(
+                "HCenter", parent=styles["Heading1"], fontName="Helvetica-Bold",
+                fontSize=16, leading=18, alignment=TA_CENTER, spaceAfter=8
+            )
+            h_sub = ParagraphStyle(
+                "HSub", parent=styles["Heading2"], fontName="Helvetica-Bold",
+                fontSize=13, leading=16, alignment=TA_JUSTIFY, spaceBefore=6, spaceAfter=6
+            )
 
-        doc.build(elements)
-        return buffer.getvalue()
+            story = []
+            story.append(Paragraph("Trade Metrics", h_center))
+            story.append(Spacer(0, 6))
 
-    pdf_bytes = generate_pdf()
-    st.download_button("📤 Extract Report (PDF)", data=pdf_bytes, file_name="backtest_report.pdf", mime="application/pdf")
+            # Equity Curve
+            story.append(Paragraph("Equity Curve", h_sub))
+            story.append(RLImage(buf_eq, width=500, height=170))
+            story.append(Spacer(0, 8))
+
+            # Trades table
+            story.append(Paragraph("Trades", h_sub))
+            tbl = Table(rows, repeatRows=1)
+            tbl.setStyle(TableStyle([
+                ("FONT", (0,0), (-1,-1), "Helvetica", 12),
+                ("BACKGROUND", (0,0), (-1,0), colors.whitesmoke),
+                ("TEXTCOLOR", (0,0), (-1,0), colors.black),
+                ("ALIGN", (0,0), (-1,0), "CENTER"),
+                ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+                ("INNERGRID", (0,0), (-1,-1), 0.25, colors.grey),
+                ("BOX", (0,0), (-1,-1), 0.5, colors.grey),
+            ]))
+            story.append(tbl)
+            story.append(Spacer(0, 10))
+
+            # Summary metrics
+            end_eq = eq[-1] if eq else start_eq
+            kpis = (
+                f"Total Trades: <b>{total_trades}</b><br/>"
+                f"Wins: <b>{wins_ct}</b> • Losses: <b>{losses_ct}</b> • Win Ratio: <b>{win_ratio:.1f}%</b><br/>"
+                f"Start Equity: <b>{start_eq:.2f}</b> • End Equity: <b>{end_eq:.2f}</b><br/>"
+                f"Sharpe (per-trade): <b>{sharpe:.2f}</b><br/>"
+            )
+            story.append(Paragraph("Summary", h_sub))
+            story.append(Paragraph(kpis, body))
+            story.append(Spacer(0, 8))
+
+            # Pie chart
+            story.append(Paragraph("Win / Loss Breakdown", h_sub))
+            story.append(RLImage(buf_pie, width=450, height=250))
+            story.append(Spacer(0, 6))
+            story.append(Paragraph("Legend: Green = Wins, Red = Losses.", body))
+
+            # Build PDF
+            doc.build(story)
+            pdf_buf.seek(0)
+
+            st.download_button(
+                "⬇️ Download Report (PDF)",
+                data=pdf_buf,
+                file_name="trade_report.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
