@@ -1,17 +1,15 @@
-# tp_sl_calculator.py — TP/SL (Live + Backtest) with PDF report (no CSV), polished UI
-# - Table is HTML-rendered (no Streamlit toolbar), single "Serial Number" column
-# - Only "Extract Report (PDF)" action under the table
-# - Helvetica everywhere, compact single-border sections
+# tp_sl_calculator.py — TP/SL (Live + Backtest) with PDF export (no CSV)
+# UI: Helvetica, single-border rectangles, clean layout
+# Backtest results (table/charts/PDF) are shown ONLY after "End Session"
 
 from datetime import datetime
 from io import BytesIO
 from math import sqrt
 from pathlib import Path
-import json
 import pandas as pd
 import streamlit as st
 
-# Optional libs (install in requirements.txt): pandas, matplotlib, reportlab
+# Optional libs (needed for charts/PDF)
 try:
     import matplotlib.pyplot as plt
 except ModuleNotFoundError:
@@ -26,7 +24,8 @@ try:
 except Exception:
     REPORTLAB_OK = False
 
-# ---------------- Page & Style ----------------
+
+# ---------- Page & CSS ----------
 st.set_page_config(page_title="TP/SL Calculator", page_icon="📈", layout="wide")
 st.markdown("""
 <style>
@@ -45,31 +44,30 @@ st.markdown("""
   }
   .boldlabel label > div:first-child { font-weight:700 !important; }
   .stNumberInput > div > div > input { font-weight:700; }
-  /* Safety net: hide any stray toolbar if a dataframe sneaks in */
-  div[data-testid="stDataFrame"] [data-testid="stElementToolbar"] { display:none !important; }
 </style>
 """, unsafe_allow_html=True)
 
+
+# ---------- Constants ----------
 TP_MULT = 2.0
 DEC = 4
 
-# ---------------- State ----------------
+
+# ---------- Session State ----------
 if "bt" not in st.session_state:
     st.session_state.bt = {
         "recording": False,
+        "summary_ready": False,
         "session_name": "",
         "start_equity": None,
         "equity": None,
         "trades": [],
         "last_calc": None,
-        "summary_ready": False,
-        "stamp": None
+        "stamp": None,
     }
 
-# ---------------- Persistence (optional local save of sessions) ----------------
-SESS_DIR = Path.cwd() / "sessions"
-SESS_DIR.mkdir(exist_ok=True)
 
+# ---------- Helpers ----------
 def _safe_name(name: str) -> str:
     return "".join(ch for ch in (name or "Session").strip().replace(" ", "_")
                    if ch.isalnum() or ch in "._-")[:64]
@@ -96,7 +94,8 @@ def _pct_from_exit(entry, exit_price, side):
 
 def _compound(dec_pct):
     if st.session_state.bt["equity"] is None:
-        st.warning("Start a backtesting session first."); return
+        st.warning("Start a backtesting session first.")
+        return
     st.session_state.bt["equity"] *= (1.0 + dec_pct)
 
 def _log_trade(result_label, side, entry, atr, sl_mult, sl, tp, rr, exit_price, pct_gain):
@@ -107,8 +106,60 @@ def _log_trade(result_label, side, entry, atr, sl_mult, sl, tp, rr, exit_price, 
         "exit_price": exit_price, "pct_gain": pct_gain,
     })
 
-# ---------------- HTML Table (no toolbar) ----------------
-def render_trades_table(df: pd.DataFrame):
+
+# ---------- Robust Charts ----------
+def _build_pie_figure(wins: int, losses: int, theme: str = "dark"):
+    """Safe pie builder (never crashes when wins=losses=0)"""
+    import matplotlib.pyplot as plt
+    bg = "black" if theme == "dark" else "white"
+    fg = "white" if theme == "dark" else "black"
+    fig, ax = plt.subplots(figsize=(12, 6) if theme == "dark" else (7, 4))
+    fig.patch.set_facecolor(bg)
+    ax.set_facecolor(bg)
+
+    total = max(0, int(wins)) + max(0, int(losses))
+    if total == 0:
+        ax.text(0.5, 0.5, "No trades yet", ha="center", va="center",
+                fontsize=16, fontweight="bold", color=fg)
+        ax.axis("off")
+        return fig
+
+    wedges, _, _ = ax.pie(
+        [wins, losses],
+        labels=None,
+        colors=["#00c853", "#ff1744"],  # green, red
+        autopct=lambda p: f"{p:.1f}%",
+        startangle=90,
+        textprops={"color": fg, "weight": "bold"},
+    )
+    ax.axis("equal")
+    ax.legend(
+        wedges, ["Wins", "Losses"],
+        loc="center left", bbox_to_anchor=(1.02, 0.5),
+        frameon=False, labelcolor=fg
+    )
+    return fig
+
+def _build_equity_figure(eq_vals, theme: str = "dark"):
+    import matplotlib.pyplot as plt
+    bg = "black" if theme == "dark" else "white"
+    fg = "white" if theme == "dark" else "black"
+    fig, ax = plt.subplots(figsize=(12, 4) if theme == "dark" else (10, 3.5))
+    fig.patch.set_facecolor(bg); ax.set_facecolor(bg)
+    if not eq_vals:
+        eq_vals = [0.0]
+    ax.plot(range(len(eq_vals)), eq_vals, marker='o')
+    ax.set_xlabel("Trades" if theme == "dark" else "Number of Trades", color=fg)
+    ax.set_ylabel("Account Value" if theme == "dark" else "Account Size", color=fg)
+    ax.tick_params(colors=fg)
+    for spine in ax.spines.values():
+        spine.set_color(fg)
+    ax.grid(alpha=0.25)
+    return fig
+
+
+# ---------- HTML Table (no Streamlit toolbar, centered + bold headers) ----------
+def _render_html_table(df: pd.DataFrame):
     try:
         sty = (
             df.style
@@ -127,8 +178,9 @@ def render_trades_table(df: pd.DataFrame):
         except Exception: pass
     st.markdown(sty.to_html(), unsafe_allow_html=True)
 
-# ---------------- PDF Builder ----------------
-def build_and_offer_pdf(display_df: pd.DataFrame, trades_internal: pd.DataFrame):
+
+# ---------- PDF Report ----------
+def _build_pdf(display_df: pd.DataFrame, trades_internal: pd.DataFrame):
     if not REPORTLAB_OK or plt is None:
         st.error("Please add `reportlab` and `matplotlib` to requirements.txt to export PDF.")
         return
@@ -146,32 +198,27 @@ def build_and_offer_pdf(display_df: pd.DataFrame, trades_internal: pd.DataFrame)
         sd = var**0.5
         sharpe = (mu/sd * (len(rets)**0.5)) if sd > 0 else 0.0
 
-    start_eq = float(st.session_state.bt["start_equity"] or 0.0)
+    start_eq = float(st.session_state.bt.get("start_equity") or 0.0)
     eq_vals = _equity_series(start_eq, st.session_state.bt["trades"])
 
-    # Pie (white)
-    fig_pie, axp = plt.subplots(figsize=(7,4))
-    fig_pie.patch.set_facecolor("white"); axp.set_facecolor("white")
-    wedges, _, _ = axp.pie([wins, losses], colors=["#00c853","#ff1744"],
-                           autopct=lambda p:f"{p:.1f}%", startangle=90,
-                           textprops={"color":"black","weight":"bold"})
-    axp.axis("equal")
-    axp.legend(wedges, ["Wins","Losses"], loc="center left", bbox_to_anchor=(1.02, 0.5))
-    pie_buf = BytesIO(); fig_pie.savefig(pie_buf, format="png", bbox_inches="tight", dpi=200); plt.close(fig_pie); pie_buf.seek(0)
+    # Pie (light)
+    fig_pie = _build_pie_figure(int(wins), int(losses), theme="light")
+    pie_buf = BytesIO()
+    fig_pie.savefig(pie_buf, format="png", bbox_inches="tight", dpi=200)
+    plt.close(fig_pie); pie_buf.seek(0)
 
-    # Equity (white)
-    fig_eq, axe = plt.subplots(figsize=(10,3.5))
-    fig_eq.patch.set_facecolor("white"); axe.set_facecolor("white")
-    axe.plot(range(len(eq_vals)), eq_vals, marker='o')
-    axe.set_xlabel("Number of Trades"); axe.set_ylabel("Account Size"); axe.grid(alpha=0.25)
-    eq_buf = BytesIO(); fig_eq.savefig(eq_buf, format="png", bbox_inches="tight", dpi=200); plt.close(fig_eq); eq_buf.seek(0)
+    # Equity (light)
+    fig_eq = _build_equity_figure(eq_vals, theme="light")
+    eq_buf = BytesIO()
+    fig_eq.savefig(eq_buf, format="png", bbox_inches="tight", dpi=200)
+    plt.close(fig_eq); eq_buf.seek(0)
 
     # Rows (exactly as displayed)
     rows = [list(display_df.columns)]
     for _, r in display_df.iterrows():
         rows.append([r[c] for c in display_df.columns])
 
-    # PDF
+    # PDF document
     pdf_buf = BytesIO()
     doc = SimpleDocTemplate(pdf_buf, leftMargin=18, rightMargin=18, topMargin=18, bottomMargin=18)
     styles = getSampleStyleSheet()
@@ -234,18 +281,21 @@ def build_and_offer_pdf(display_df: pd.DataFrame, trades_internal: pd.DataFrame)
         use_container_width=True
     )
 
-# ---------------- Header ----------------
+
+# ---------- Header ----------
 st.markdown("# TP/SL Calculator")
 st.markdown(
     "<div class='subtitle'>Live & Backtest • Realistic Compounding • Precision-Engineered Strategy Execution</div>",
     unsafe_allow_html=True
 )
 
-# ---------------- Mode ----------------
+
+# ---------- Mode ----------
 with st.container(border=True):
     mode = st.radio("Mode", ["Live", "Backtest"], horizontal=True)
 
-# ---------------- LIVE ----------------
+
+# ---------- LIVE MODE ----------
 if mode == "Live":
     with st.container(border=True):
         st.markdown("### **Direction**")
@@ -297,37 +347,44 @@ if mode == "Live":
                 with c:
                     st.markdown("**Reward : Risk**"); st.info(f"**{rr:.2f} : 1**")
 
-# ---------------- BACKTEST ----------------
+
+# ---------- BACKTEST MODE ----------
 if mode == "Backtest":
+
     # Controls
     with st.container(border=True):
         st.markdown("### **Backtesting Controls**")
-        c1, c2 = st.columns([2,1])
-        with c1:
-            st.session_state.bt["session_name"] = st.text_input(
-                "Session Name", value=st.session_state.bt.get("session_name",""),
-                placeholder="e.g., BTC_1H_TrendPullback"
-            )
-        with c2:
-            if not st.session_state.bt.get("stamp"):
-                st.session_state.bt["stamp"] = datetime.now().strftime("%Y%m%d_%H%M%S")
-        start_equity = st.number_input("Account Size (Starting Equity)", min_value=0.0,
-                                       value=float(st.session_state.bt["start_equity"] or 0.0),
-                                       step=100.0, format="%.2f")
-        c3, c4 = st.columns([1,1])
-        with c3:
-            start_clicked = st.button("Start Session", use_container_width=True)
-        with c4:
-            end_clicked = st.button("End Session", use_container_width=True)
+
+        st.session_state.bt["session_name"] = st.text_input(
+            "Session Name", value=st.session_state.bt.get("session_name",""),
+            placeholder="e.g., BTC_1H_TrendPullback"
+        )
+
+        if not st.session_state.bt.get("stamp"):
+            st.session_state.bt["stamp"] = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        start_equity = st.number_input(
+            "Account Size (Starting Equity)", min_value=0.0,
+            value=float(st.session_state.bt["start_equity"] or 0.0),
+            step=100.0, format="%.2f"
+        )
+
+        # Vertical: Start above End (same width)
+        start_clicked = st.button("Start Session", use_container_width=True, key="start_bt")
+        end_clicked   = st.button("End Session",   use_container_width=True, key="end_bt")
 
         if start_clicked:
             if start_equity <= 0:
                 st.error("Please enter a positive account size.")
             else:
                 st.session_state.bt.update({
-                    "recording": True, "start_equity": start_equity, "equity": start_equity,
-                    "trades": [], "summary_ready": False, "last_calc": None,
-                    "stamp": datetime.now().strftime("%Y%m%d_%H%M%S")
+                    "recording": True,
+                    "summary_ready": False,
+                    "start_equity": start_equity,
+                    "equity": start_equity,
+                    "trades": [],
+                    "last_calc": None,
+                    "stamp": datetime.now().strftime("%Y%m%d_%H%M%S"),
                 })
                 st.success("Backtesting started.")
 
@@ -335,11 +392,11 @@ if mode == "Backtest":
             if st.session_state.bt["recording"]:
                 st.session_state.bt["recording"] = False
                 st.session_state.bt["summary_ready"] = True
-                st.info("Backtesting ended. Summary below.")
+                st.info("Backtesting ended. Results are shown below.")
             else:
                 st.info("No active session to end.")
 
-    # Calculator
+    # Calculator (always visible for input)
     with st.container(border=True):
         st.markdown("**Direction**")
         st.markdown("<div class='boldlabel'>", unsafe_allow_html=True)
@@ -382,6 +439,7 @@ if mode == "Backtest":
             with c:
                 st.markdown("**Reward : Risk**"); st.info(f"**{rr:.2f} : 1**")
 
+            # Snapshot for record buttons
             st.session_state.bt["last_calc"] = {
                 "side": side, "entry": entry, "atr": atr,
                 "sl_mult": sl_mult, "sl": sl, "tp": tp, "rr": rr,
@@ -393,24 +451,24 @@ if mode == "Backtest":
             exit_price = st.number_input("Exit Price (for Closed at 'Selected Price')",
                                          min_value=0.0, format=f'%.{DEC}f')
 
-            r1, r2, r3 = st.columns(3)
-            with r1:
-                if st.button("Record Win ✅", use_container_width=True,
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("Record Win", use_container_width=True,
                              disabled=not st.session_state.bt["recording"]):
                     calc = st.session_state.bt["last_calc"]
                     _compound(calc["tp_pct"]/100.0)
                     _log_trade("WIN", calc["side"], calc["entry"], calc["atr"], calc["sl_mult"],
                                calc["sl"], calc["tp"], calc["rr"], None, calc["tp_pct"])
                     st.success("Recorded full TP win.")
-            with r2:
-                if st.button("Record Loss ❌", use_container_width=True,
+            with col2:
+                if st.button("Record Loss", use_container_width=True,
                              disabled=not st.session_state.bt["recording"]):
                     calc = st.session_state.bt["last_calc"]
                     _compound(-(calc["sl_pct"]/100.0))
                     _log_trade("LOSS", calc["side"], calc["entry"], calc["sl_mult"],
                                calc["sl"], calc["tp"], calc["rr"], None, -calc["sl_pct"])
                     st.warning("Recorded full SL loss.")
-            with r3:
+            with col3:
                 if st.button("Closed at 'Selected Price'", use_container_width=True,
                              disabled=not st.session_state.bt["recording"]):
                     if exit_price <= 0:
@@ -419,19 +477,21 @@ if mode == "Backtest":
                         calc = st.session_state.bt["last_calc"]
                         pct = _pct_from_exit(calc["entry"], exit_price, calc["side"])
                         _compound(pct/100.0)
-                        _log_trade("CLOSED", calc["side"], calc["entry"], calc["atr"], calc["sl_mult"],
+                        _log_trade("CLOSED", calc["side"], calc["entry"], calc["sl_mult"],
                                    calc["sl"], calc["tp"], calc["rr"], exit_price, pct)
-                        st.info(f"Recorded CLOSED at {exit_price:.{DEC}f} ({'▲' if pct>=0 else '▼'}{abs(pct):.2f}%).")
+                        st.info(f"Recorded CLOSED at {exit_price:.{DEC}f} "
+                                f"({'▲' if pct>=0 else '▼'}{abs(pct):.2f}%).")
         else:
             st.info("Enter **Entry** and **ATR** to see TP/SL and record trades.")
 
-    # ------------- Summary (after End Session) -------------
-    if st.session_state.bt["summary_ready"]:
-        internal = pd.DataFrame(st.session_state.bt["trades"])
-        if not internal.empty:
-            # Build display table once with a single Serial Number column
-            disp = internal.copy()
-            disp.insert(0, "Serial Number", range(1, len(disp) + 1))
+    # -------- RESULTS (ONLY after End Session) --------
+    if st.session_state.bt.get("summary_ready"):
+        trades = st.session_state.bt.get("trades", [])
+        raw_internal = pd.DataFrame(trades)
+
+        if not raw_internal.empty:
+            disp = raw_internal.copy()
+            disp.insert(0, "Serial Number", range(1, len(disp)+1))
             disp = disp[[
                 "Serial Number","ts","result","side","entry","atr",
                 "sl_mult","sl","tp","rr","exit_price","pct_gain"
@@ -443,40 +503,33 @@ if mode == "Backtest":
 
             with st.container(border=True):
                 st.markdown("### **Trades**")
-                render_trades_table(disp)  # HTML table — no toolbar, no CSV
-                if st.button("Extract Report (PDF)", use_container_width=True, key="extract_pdf"):
-                    build_and_offer_pdf(disp, internal)
+                _render_html_table(disp)
 
-    # -------- In-app Charts --------
-    wins = sum(1 for t in st.session_state.bt["trades"] if t["pct_gain"] >= 0)
-    losses = sum(1 for t in st.session_state.bt["trades"] if t["pct_gain"] < 0)
+                # Only action under the table
+                if st.button("Extract Report (PDF)", use_container_width=True):
+                    _build_pdf(disp, raw_internal)
 
-    with st.container(border=True):
-        st.markdown("### **Win / Loss Breakdown**")
-        if plt is None:
-            st.error("Matplotlib required for pie chart.")
+            wins = (raw_internal["pct_gain"] >= 0).sum()
+            losses = (raw_internal["pct_gain"] < 0).sum()
+
+            with st.container(border=True):
+                st.markdown("### **Win / Loss Breakdown**")
+                if plt is None:
+                    st.error("Matplotlib required for pie chart.")
+                else:
+                    fig = _build_pie_figure(int(wins), int(losses), theme="dark")
+                    st.pyplot(fig, use_container_width=True)
+
+            with st.container(border=True):
+                st.markdown("### **Equity Curve**")
+                if plt is None:
+                    st.info("Install matplotlib to view equity curve.")
+                else:
+                    eq_vals = _equity_series(float(st.session_state.bt.get("start_equity") or 0.0), trades)
+                    fig2 = _build_equity_figure(eq_vals, theme="dark")
+                    st.pyplot(fig2, use_container_width=True)
+    else:
+        if st.session_state.bt.get("recording"):
+            st.info("Backtesting session in progress… end the session to see results.")
         else:
-            fig, ax = plt.subplots(figsize=(12, 6))
-            fig.patch.set_facecolor("black"); ax.set_facecolor("black")
-            fig.subplots_adjust(left=0.05, right=0.78, top=0.95, bottom=0.06)
-            wedges, _, _ = ax.pie([wins, losses], labels=None,
-                                  colors=["#00c853", "#ff1744"],
-                                  autopct=lambda p: f"{p:.1f}%",
-                                  startangle=90,
-                                  textprops={"color":"white","weight":"bold"})
-            ax.axis("equal")
-            ax.legend(wedges, ["Wins","Losses"], loc="center left",
-                      bbox_to_anchor=(1.02, 0.5), frameon=False, labelcolor="white")
-            st.pyplot(fig, use_container_width=True)
-
-    with st.container(border=True):
-        st.markdown("### **Equity Curve**")
-        if plt is None:
-            st.info("Install matplotlib to view equity curve.")
-        else:
-            eq = _equity_series(st.session_state.bt["start_equity"] or 0.0,
-                                st.session_state.bt["trades"])
-            fig2, ax2 = plt.subplots(figsize=(12, 4))
-            ax2.plot(range(len(eq)), eq, marker='o')
-            ax2.set_xlabel("Trades"); ax2.set_ylabel("Account Value"); ax2.grid(alpha=0.25)
-            st.pyplot(fig2, use_container_width=True)
+            st.info("Start a session and record trades. Results will appear after you end the session.")
