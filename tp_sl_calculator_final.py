@@ -1,11 +1,9 @@
 # ================================================================
-# TP/SL Calculator (Live + Backtest) — Stable Final w/ Δ and PDF
-# ================================================================
-# UI: Helvetica, single-rectangle sections
-# Logic: realistic compounding (full capital each trade)
-# Summary/charts appear ONLY after "End Session"
-# PDF: standard margins, Helvetica 12, centered bold headings,
-#      justified body, bold table headers, labeled equity axes
+# TP/SL Calculator (Live + Backtest) — Final
+# - Δ price/% under SL/TP
+# - Summary only after End Session (no mid-session charts/tables)
+# - Professional PDF export (landscape, Helvetica 12, justified)
+# - Status panel + progress bar during PDF build
 # ================================================================
 
 import streamlit as st
@@ -26,6 +24,7 @@ try:
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
     from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter, landscape
     REPORTLAB_OK = True
 except Exception:
     REPORTLAB_OK = False
@@ -111,6 +110,111 @@ def _equity_series(start_equity, trades):
         e *= (1.0 + (t["pct_gain"] / 100.0))
         eq.append(e)
     return eq
+
+# ---------- PDF builder (professional layout) ----------
+def _fmt_num(x, nd=2):
+    try:
+        return f"{float(x):,.{nd}f}"
+    except Exception:
+        return str(x)
+
+def build_backtest_pdf(trades_df: pd.DataFrame, start_equity: float, eq_fig) -> BytesIO:
+    """
+    Build a professional PDF:
+    - Landscape letter, 1" margins
+    - Helvetica 12, centered bold headings, justified body
+    - Clean, banded table with formatted numeric values
+    """
+    df = trades_df.copy()
+
+    # Ensure consistent column order
+    cols = ["Serial Number","Time","Result","Side","Entry","ATR","SL Multiple",
+            "Stop Loss","Take Profit","Risk/Return","Exit Price","% Gain"]
+    df = df[cols]
+
+    # Replace NaNs in Exit Price with 'None', format numerics/percentages
+    df["Entry"]       = df["Entry"].apply(lambda v: _fmt_num(v, 4))
+    df["ATR"]         = df["ATR"].apply(lambda v: _fmt_num(v, 4))
+    df["SL Multiple"] = df["SL Multiple"].apply(lambda v: _fmt_num(v, 2))
+    df["Stop Loss"]   = df["Stop Loss"].apply(lambda v: _fmt_num(v, 4))
+    df["Take Profit"] = df["Take Profit"].apply(lambda v: _fmt_num(v, 4))
+    df["Risk/Return"] = df["Risk/Return"].apply(lambda v: _fmt_num(v, 2))
+    df["Exit Price"]  = df["Exit Price"].apply(lambda v: "None" if pd.isna(v) else _fmt_num(v, 4))
+    df["% Gain"]      = df["% Gain"].apply(lambda v: f"{float(v):.2f}%")
+
+    table_rows = [cols] + df.values.tolist()
+
+    # Equity fig to buffer
+    buf_eq = BytesIO()
+    eq_fig.savefig(buf_eq, format="png", bbox_inches="tight", dpi=200)
+    buf_eq.seek(0)
+
+    pdf_buf = BytesIO()
+    doc = SimpleDocTemplate(
+        pdf_buf,
+        pagesize=landscape(letter),
+        leftMargin=72, rightMargin=72, topMargin=72, bottomMargin=72
+    )
+
+    styles = getSampleStyleSheet()
+    H1 = ParagraphStyle("H1", parent=styles["Heading1"], fontName="Helvetica-Bold",
+                        fontSize=16, leading=18, alignment=TA_CENTER, spaceAfter=10)
+    H2 = ParagraphStyle("H2", parent=styles["Heading2"], fontName="Helvetica-Bold",
+                        fontSize=13, leading=16, alignment=TA_CENTER, spaceBefore=8, spaceAfter=8)
+    Body = ParagraphStyle("Body", parent=styles["Normal"], fontName="Helvetica",
+                          fontSize=12, leading=15, alignment=TA_JUSTIFY)
+
+    story = []
+    story.append(Paragraph("Backtesting Performance Metrics", H1))
+    story.append(Spacer(0, 6))
+
+    # Trades table
+    story.append(Paragraph("Trades Table", H2))
+    col_widths = [  # tuned for landscape letter
+        70, 140, 70, 60, 85, 85, 85, 95, 95, 85, 85, 80
+    ]
+    tbl = Table(table_rows, colWidths=col_widths, repeatRows=1)
+
+    numeric_cols = [4,5,6,7,8,9,10,11]  # indexes in table_rows
+    tbl_style = TableStyle([
+        ("FONT", (0,0), (-1,-1), "Helvetica", 12),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("BACKGROUND", (0,0), (-1,0), colors.whitesmoke),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.black),
+
+        ("ALIGN", (0,0), (-1,0), "CENTER"),      # header
+        ("ALIGN", (0,1), (3,-1), "CENTER"),      # text cols centered
+    ])
+    for c in numeric_cols:
+        tbl_style.add("ALIGN", (c,1), (c,-1), "RIGHT")
+    tbl_style.add("GRID", (0,0), (-1,-1), 0.25, colors.lightgrey)
+    tbl_style.add("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.Color(0.97,0.97,0.97), colors.white])
+
+    tbl.setStyle(tbl_style)
+    story.append(tbl)
+    story.append(Spacer(0, 12))
+
+    # Summary
+    total = len(trades_df)
+    wins = sum(1 for x in trades_df["% Gain"] if float(x) >= 0)
+    win_pct = (wins/total*100.0) if total else 0.0
+    summary_html = (
+        f"Total Trades: <b>{total}</b><br/>"
+        f"Winning Trades: <b>{wins}</b><br/>"
+        f"Winning Percentage: <b>{win_pct:.2f}%</b>"
+    )
+    story.append(Paragraph("Summary", H2))
+    story.append(Paragraph(summary_html, Body))
+    story.append(Spacer(0, 16))
+
+    # Equity curve
+    story.append(Paragraph("Equity Curve", H2))
+    story.append(RLImage(buf_eq, width=700, height=240))
+    story.append(Spacer(0, 8))
+
+    doc.build(story)
+    pdf_buf.seek(0)
+    return pdf_buf
 
 # ---------- Title ----------
 st.markdown("# TP/SL Calculator")
@@ -279,9 +383,11 @@ if mode == "Backtest":
 
     # ---- Summary (only AFTER End Session) ----
     if st.session_state.bt["summary_ready"] and st.session_state.bt["trades"]:
-        trades = pd.DataFrame(st.session_state.bt["trades"])
-        trades.insert(0, "Serial Number", range(1, len(trades) + 1))
-        trades = trades.rename(columns={
+        # Build display table
+        trades_raw = pd.DataFrame(st.session_state.bt["trades"])
+        trades_disp = trades_raw.copy()
+        trades_disp.insert(0, "Serial Number", range(1, len(trades_disp) + 1))
+        trades_disp = trades_disp.rename(columns={
             "ts": "Time", "result": "Result", "side": "Side", "entry": "Entry",
             "atr": "ATR", "sl_mult": "SL Multiple", "sl": "Stop Loss",
             "tp": "Take Profit", "rr": "Risk/Return", "exit_price": "Exit Price",
@@ -290,10 +396,10 @@ if mode == "Backtest":
 
         with st.container(border=True):
             st.markdown("### **Trades Table**")
-            st.dataframe(trades, use_container_width=True)
+            st.dataframe(trades_disp, use_container_width=True)
 
-            wins = (trades["% Gain"] >= 0).sum()
-            total = len(trades)
+            wins = (trades_disp["% Gain"] >= 0).sum()
+            total = len(trades_disp)
             win_pct = (wins / total * 100.0) if total > 0 else 0.0
 
             st.markdown("### **Total Number of Trades**")
@@ -301,7 +407,7 @@ if mode == "Backtest":
             st.write(f"**Winning Trades:** {wins}")
             st.write(f"**Winning Percentage:** {win_pct:.2f}%")
 
-            # Equity curve
+            # Equity Curve (and keep a figure handle for PDF)
             eq_fig = None
             if plt is not None:
                 eq_vals = _equity_series(st.session_state.bt["start_equity"], st.session_state.bt["trades"])
@@ -313,79 +419,60 @@ if mode == "Backtest":
                 st.pyplot(fig, use_container_width=True)
                 eq_fig = fig
 
-            # PDF Export
+            # -------- Extract Report with Status + Progress --------
             if st.button("Extract Report (PDF)", use_container_width=True):
-                if not REPORTLAB_OK or plt is None or eq_fig is None:
-                    st.error("Install `reportlab` + `matplotlib` to export the PDF.")
+                if not (REPORTLAB_OK and plt is not None and eq_fig is not None):
+                    st.error("Install `reportlab` and `matplotlib` to export the PDF.")
                 else:
-                    # Save equity fig to buffer
-                    buf_eq = BytesIO()
-                    eq_fig.savefig(buf_eq, format="png", bbox_inches="tight", dpi=200)
-                    buf_eq.seek(0)
+                    # Prefer st.status if available (1.31+), else fallback to progress+spinner
+                    status_ctx = getattr(st, "status", None)
+                    if status_ctx is not None:
+                        status = st.status("Preparing report…", expanded=True)
+                        try:
+                            p = st.progress(0, text="Starting…")
 
-                    # Build PDF (standard margins = 1in/72pt)
-                    pdf_buf = BytesIO()
-                    doc = SimpleDocTemplate(
-                        pdf_buf,
-                        leftMargin=72, rightMargin=72, topMargin=72, bottomMargin=72
-                    )
-                    styles = getSampleStyleSheet()
-                    h_center = ParagraphStyle(
-                        "HCenter", parent=styles["Heading1"], fontName="Helvetica-Bold",
-                        fontSize=16, leading=18, alignment=TA_CENTER, spaceAfter=8
-                    )
-                    h_sub = ParagraphStyle(
-                        "HSub", parent=styles["Heading2"], fontName="Helvetica-Bold",
-                        fontSize=13, leading=16, alignment=TA_CENTER, spaceBefore=6, spaceAfter=6
-                    )
-                    body = ParagraphStyle(
-                        "Body", parent=styles["Normal"], fontName="Helvetica",
-                        fontSize=12, leading=15, alignment=TA_JUSTIFY
-                    )
+                            status.write("Step 1/4: Formatting table")
+                            # Slightly reformat display DF for the PDF function
+                            p.progress(25, text="Formatting table…")
 
-                    # Table rows
-                    rows = [list(trades.columns)] + trades.values.tolist()
+                            status.write("Step 2/4: Rendering equity curve")
+                            # (fig already rendered; nothing to do)
+                            p.progress(50, text="Rendering equity curve…")
 
-                    tbl = Table(rows, repeatRows=1)
-                    tbl.setStyle(TableStyle([
-                        ("FONT", (0,0), (-1,-1), "Helvetica", 12),
-                        ("BACKGROUND", (0,0), (-1,0), colors.whitesmoke),
-                        ("TEXTCOLOR", (0,0), (-1,0), colors.black),
-                        ("ALIGN", (0,0), (-1,0), "CENTER"),
-                        ("ALIGN", (0,1), (-1,-1), "CENTER"),
-                        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-                        ("INNERGRID", (0,0), (-1,-1), 0.25, colors.grey),
-                        ("BOX", (0,0), (-1,-1), 0.5, colors.grey),
-                    ]))
+                            status.write("Step 3/4: Building PDF")
+                            pdf_buf = build_backtest_pdf(trades_disp, float(st.session_state.bt["start_equity"]), eq_fig)
+                            p.progress(85, text="Building PDF…")
 
-                    story = []
-                    story.append(Paragraph("Backtesting Performance Metrics", h_center))
-                    story.append(Spacer(0, 10))
+                            status.write("Step 4/4: Finalizing")
+                            p.progress(100, text="Done")
 
-                    story.append(Paragraph("Trades Table", h_sub))
-                    story.append(tbl)
-                    story.append(Spacer(0, 12))
-
-                    # Summary block
-                    summary_html = (
-                        f"Total Trades: <b>{total}</b><br/>"
-                        f"Winning Trades: <b>{wins}</b><br/>"
-                        f"Winning Percentage: <b>{win_pct:.2f}%</b>"
-                    )
-                    story.append(Paragraph(summary_html, body))
-                    story.append(Spacer(0, 16))
-
-                    story.append(Paragraph("Equity Curve", h_sub))
-                    story.append(RLImage(buf_eq, width=500, height=170))
-                    story.append(Spacer(0, 6))
-
-                    doc.build(story)
-                    pdf_buf.seek(0)
-
-                    st.download_button(
-                        "⬇️ Download Report (PDF)",
-                        data=pdf_buf,
-                        file_name="Backtesting_Report.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
+                            status.update(label="Report ready ✓", state="complete")
+                            st.download_button(
+                                "⬇️ Download Report (PDF)",
+                                data=pdf_buf,
+                                file_name="Backtesting_Report.pdf",
+                                mime="application/pdf",
+                                use_container_width=True
+                            )
+                        except Exception as e:
+                            status.update(label="Failed ❌", state="error")
+                            st.error(str(e))
+                    else:
+                        # Fallback for older Streamlit
+                        progress = st.progress(0, text="Starting…")
+                        try:
+                            progress.progress(25, text="Formatting table…")
+                            progress.progress(50, text="Rendering equity curve…")
+                            progress.progress(75, text="Building PDF…")
+                            pdf_buf = build_backtest_pdf(trades_disp, float(st.session_state.bt["start_equity"]), eq_fig)
+                            progress.progress(100, text="Done")
+                            st.success("Report ready ✓")
+                            st.download_button(
+                                "⬇️ Download Report (PDF)",
+                                data=pdf_buf,
+                                file_name="Backtesting_Report.pdf",
+                                mime="application/pdf",
+                                use_container_width=True
+                            )
+                        except Exception as e:
+                            st.error(str(e))
