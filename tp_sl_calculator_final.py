@@ -1,9 +1,10 @@
 # ================================================================
-# TP/SL Calculator (Live + Backtest) — Final
+# TP/SL Calculator (Live + Backtest) — Final with Leverage View
 # - Δ price/% under SL/TP
 # - Summary only after End Session (no mid-session charts/tables)
 # - Professional PDF export (landscape, Helvetica 12, justified)
 # - Status panel + progress bar during PDF build
+# - Leverage buttons (5×/10×/15×/20×) show leveraged table + final equity
 # ================================================================
 
 import streamlit as st
@@ -111,16 +112,16 @@ def _equity_series(start_equity, trades):
         eq.append(e)
     return eq
 
-# ---------- PDF builder (professional layout) ----------
 def _fmt_num(x, nd=2):
     try:
         return f"{float(x):,.{nd}f}"
     except Exception:
         return str(x)
 
+# ---------- PDF builder (professional layout) ----------
 def build_backtest_pdf(trades_df: pd.DataFrame, start_equity: float, eq_fig) -> BytesIO:
     """
-    Build a professional PDF:
+    Professional PDF:
     - Landscape letter, 1" margins
     - Helvetica 12, centered bold headings, justified body
     - Clean, banded table with formatted numeric values
@@ -132,7 +133,7 @@ def build_backtest_pdf(trades_df: pd.DataFrame, start_equity: float, eq_fig) -> 
             "Stop Loss","Take Profit","Risk/Return","Exit Price","% Gain"]
     df = df[cols]
 
-    # Replace NaNs in Exit Price with 'None', format numerics/percentages
+    # Format numerics/percentages
     df["Entry"]       = df["Entry"].apply(lambda v: _fmt_num(v, 4))
     df["ATR"]         = df["ATR"].apply(lambda v: _fmt_num(v, 4))
     df["SL Multiple"] = df["SL Multiple"].apply(lambda v: _fmt_num(v, 2))
@@ -182,7 +183,7 @@ def build_backtest_pdf(trades_df: pd.DataFrame, start_equity: float, eq_fig) -> 
         ("BACKGROUND", (0,0), (-1,0), colors.whitesmoke),
         ("TEXTCOLOR", (0,0), (-1,0), colors.black),
 
-        ("ALIGN", (0,0), (-1,0), "CENTER"),      # header
+        ("ALIGN", (0,0), (-1,0), "CENTER"),      # header centered
         ("ALIGN", (0,1), (3,-1), "CENTER"),      # text cols centered
     ])
     for c in numeric_cols:
@@ -215,6 +216,60 @@ def build_backtest_pdf(trades_df: pd.DataFrame, start_equity: float, eq_fig) -> 
     doc.build(story)
     pdf_buf.seek(0)
     return pdf_buf
+
+# ---------- Leverage helper ----------
+def build_leveraged_table(trades_internal: pd.DataFrame, start_equity: float, leverage: float) -> pd.DataFrame:
+    """
+    Leverage view per trade:
+      Position Size = equity_before * leverage
+      P&L          = position_size * (pct_gain/100)
+      Equity After = equity_before + P&L
+    Returns a display-ready DataFrame using your headings.
+    """
+    if trades_internal.empty:
+        return pd.DataFrame()
+
+    # expected internal columns
+    internal_cols = ["ts","result","side","entry","atr","sl_mult","sl","tp","rr","exit_price","pct_gain"]
+    df = trades_internal.copy()[internal_cols]
+
+    serial = []
+    pos_size = []
+    pnl = []
+    eq_after = []
+
+    eq = float(start_equity)
+    for _i, row in df.iterrows():
+        serial.append(len(serial) + 1)
+        size = eq * leverage
+        g = float(row["pct_gain"]) / 100.0
+        trade_pnl = size * g
+        new_eq = eq + trade_pnl
+
+        pos_size.append(size)
+        pnl.append(trade_pnl)
+        eq_after.append(new_eq)
+        eq = new_eq
+
+    out = pd.DataFrame({
+        "Serial Number": serial,
+        "Time": df["ts"].values,
+        "Result": df["result"].values,
+        "Side": df["side"].values,
+        "Entry": df["entry"].values,
+        "ATR": df["atr"].values,
+        "SL Multiple": df["sl_mult"].values,
+        "Stop Loss": df["sl"].values,
+        "Take Profit": df["tp"].values,
+        "Risk/Return": df["rr"].values,
+        "Exit Price": df["exit_price"].values,
+        "% Gain": df["pct_gain"].values,
+        "Leverage (×)": [leverage]*len(df),
+        "Position Size": pos_size,
+        "P&L": pnl,
+        "Equity After": eq_after,
+    })
+    return out
 
 # ---------- Title ----------
 st.markdown("# TP/SL Calculator")
@@ -424,7 +479,6 @@ if mode == "Backtest":
                 if not (REPORTLAB_OK and plt is not None and eq_fig is not None):
                     st.error("Install `reportlab` and `matplotlib` to export the PDF.")
                 else:
-                    # Prefer st.status if available (1.31+), else fallback to progress+spinner
                     status_ctx = getattr(st, "status", None)
                     if status_ctx is not None:
                         status = st.status("Preparing report…", expanded=True)
@@ -432,11 +486,10 @@ if mode == "Backtest":
                             p = st.progress(0, text="Starting…")
 
                             status.write("Step 1/4: Formatting table")
-                            # Slightly reformat display DF for the PDF function
                             p.progress(25, text="Formatting table…")
 
                             status.write("Step 2/4: Rendering equity curve")
-                            # (fig already rendered; nothing to do)
+                            # already rendered; nothing extra to do
                             p.progress(50, text="Rendering equity curve…")
 
                             status.write("Step 3/4: Building PDF")
@@ -476,3 +529,48 @@ if mode == "Backtest":
                             )
                         except Exception as e:
                             st.error(str(e))
+
+        # ---------- Leverage buttons (no download; render table & final amount) ----------
+        if "lev_selected" not in st.session_state:
+            st.session_state.lev_selected = None
+
+        with st.container(border=True):
+            st.markdown("### **Leverage View**")
+            b1, b2, b3, b4 = st.columns(4)
+            with b1:
+                if st.button("5×"):
+                    st.session_state.lev_selected = 5.0
+            with b2:
+                if st.button("10×"):
+                    st.session_state.lev_selected = 10.0
+            with b3:
+                if st.button("15×"):
+                    st.session_state.lev_selected = 15.0
+            with b4:
+                if st.button("20×"):
+                    st.session_state.lev_selected = 20.0
+
+            if st.session_state.lev_selected:
+                trades_internal_df = pd.DataFrame(st.session_state.bt["trades"])
+                start_eq = float(st.session_state.bt["start_equity"])
+                lev = float(st.session_state.lev_selected)
+
+                lev_df = build_leveraged_table(trades_internal_df, start_eq, lev)
+
+                st.markdown(f"**Leveraged Trades ({int(lev)}×)**")
+                st.dataframe(lev_df, use_container_width=True)
+
+                if not lev_df.empty:
+                    final_equity = float(lev_df["Equity After"].iloc[-1])
+                    delta = final_equity - start_eq
+                    delta_pct = (final_equity / start_eq - 1.0) * 100.0 if start_eq > 0 else 0.0
+
+                    st.markdown("---")
+                    st.markdown("**Final Compounded Amount (Leveraged)**")
+                    st.metric(
+                        label=f"Final Equity @ {int(lev)}×",
+                        value=f"{final_equity:,.2f}",
+                        delta=f"{delta:+,.2f}  ({delta_pct:+.2f}%)"
+                    )
+                else:
+                    st.info("No trades to compute leveraged equity.")
