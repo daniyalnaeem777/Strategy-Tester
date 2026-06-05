@@ -2,13 +2,21 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BacktestBulkEntry from '../components/BacktestBulkEntry.jsx';
 
+function formatElapsed(seconds) {
+  const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+  const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
 export default function BacktestSession({ session, setTrades }) {
   const navigate = useNavigate();
-  const [time, setTime] = useState(new Date());
+  const [elapsed, setElapsed] = useState(0);
   const F = 'Helvetica, Arial, sans-serif';
 
   useEffect(() => {
-    const t = setInterval(() => setTime(new Date()), 1000);
+    setElapsed(0);
+    const t = setInterval(() => setElapsed(s => s + 1), 1000);
     return () => clearInterval(t);
   }, []);
 
@@ -29,7 +37,7 @@ export default function BacktestSession({ session, setTrades }) {
           </div>
         </div>
         <div style={{ color: '#FF6600', fontFamily: F, fontSize: '1.1rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums', letterSpacing: '0.05em' }}>
-          {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+          {formatElapsed(elapsed)}
         </div>
       </div>
       <BacktestBulkEntry
