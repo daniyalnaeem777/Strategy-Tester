@@ -1,0 +1,265 @@
+@import "tailwindcss";
+@reference "tailwindcss";
+
+@theme {
+  --color-terminal-bg: #0a0a0a;
+  --color-terminal-panel: #111111;
+  --color-terminal-border: #2a2a2a;
+  --color-terminal-amber: #FF6600;
+  --color-terminal-amber-2: #FFB300;
+  --color-terminal-green: #00E676;
+  --color-terminal-red: #FF1744;
+  --color-terminal-yellow: #FFD600;
+  --color-terminal-text: #E0E0E0;
+  --color-terminal-muted: #888888;
+  --font-mono: 'Roboto Mono', monospace;
+  --font-sans: 'Inter', sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: #0a0a0a;
+    color: #E0E0E0;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #root {
+    min-height: 100vh;
+    width: 100%;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0a0a0a;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #FF6600;
+  }
+}
+
+@layer components {
+  .terminal-panel {
+    background-color: #111111;
+    border: 1px solid #2a2a2a;
+    border-top: 2px solid #FF6600;
+  }
+
+  .terminal-input {
+    background-color: #0a0a0a;
+    border: 1px solid #2a2a2a;
+    color: #E0E0E0;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .terminal-input:focus {
+    border-color: #FF6600;
+  }
+
+  .terminal-select {
+    background-color: #0a0a0a;
+    border: 1px solid #2a2a2a;
+    color: #E0E0E0;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  .terminal-select:focus {
+    border-color: #FF6600;
+  }
+
+  .terminal-label {
+    color: #888888;
+    font-size: 0.75rem;
+    font-family: 'Roboto Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .panel-header {
+    color: #FF6600;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #2a2a2a;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .stepper-btn {
+    background-color: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    color: #888888;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 1.125rem;
+    user-select: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  }
+
+  .stepper-btn:hover {
+    background-color: #FF6600;
+    color: #000000;
+    border-color: #FF6600;
+  }
+
+  .btn-amber {
+    background-color: #FF6600;
+    color: #000000;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 700;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #FF6600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+
+  .btn-amber:hover {
+    background-color: #FF8800;
+  }
+
+  .btn-amber:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: #FF6600;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #FF6600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .btn-ghost:hover {
+    background-color: #FF6600;
+    color: #000000;
+  }
+
+  .btn-win {
+    background-color: #00E676;
+    color: #000000;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 700;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #00E676;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+
+  .btn-win:hover {
+    background-color: #00FF88;
+  }
+
+  .btn-win:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .btn-loss {
+    background-color: #FF1744;
+    color: #ffffff;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 700;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #FF1744;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+
+  .btn-loss:hover {
+    background-color: #FF4466;
+  }
+
+  .btn-loss:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .btn-direction-long {
+    border: 2px solid #2a2a2a;
+    background: transparent;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 700;
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    color: #888888;
+    width: 100%;
+  }
+
+  .btn-direction-long.active,
+  .btn-direction-long:is([data-active]) {
+    background-color: #00E676;
+    border-color: #00E676;
+    color: #000000;
+  }
+
+  .btn-direction-short {
+    border: 2px solid #2a2a2a;
+    background: transparent;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 700;
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    color: #888888;
+    width: 100%;
+  }
+}
