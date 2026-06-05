@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const RSS_FEEDS = [
-  { label: 'Markets', url: 'https://feeds.bbci.co.uk/news/business/rss.xml' },
-  { label: 'Crypto', url: 'https://finance.yahoo.com/news/rssindex' },
-  { label: 'Forex', url: 'https://feeds.reuters.com/reuters/businessNews' },
-];
-
+const FEED_URL = 'https://feeds.bbci.co.uk/news/business/rss.xml';
 const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
 
 function timeAgo(dateStr) {
@@ -19,7 +14,6 @@ function timeAgo(dateStr) {
 }
 
 export default function NewsPanel() {
-  const [activeTab, setActiveTab] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,19 +24,18 @@ export default function NewsPanel() {
     setLoading(true);
     setError(null);
     setArticles([]);
-    const url = `${RSS2JSON}${encodeURIComponent(RSS_FEEDS[activeTab].url)}`;
-    fetch(url)
+    fetch(`${RSS2JSON}${encodeURIComponent(FEED_URL)}`)
       .then(r => r.json())
       .then(data => {
         if (data.status === 'ok' && data.items?.length > 0) {
           setArticles(data.items);
         } else {
-          setError(`Feed unavailable (${data.message || data.status || 'no items'})`);
+          setError(`Feed unavailable (${data.message || 'no items'})`);
         }
         setLoading(false);
       })
       .catch(e => { setError(`Network error: ${e.message}`); setLoading(false); });
-  }, [activeTab, retryCount]);
+  }, [retryCount]);
 
   return (
     <div className="terminal-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -55,30 +48,9 @@ export default function NewsPanel() {
         </span>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #2a2a2a' }}>
-        {RSS_FEEDS.map((f, i) => (
-          <button
-            key={i}
-            onClick={() => setActiveTab(i)}
-            style={{
-              padding: '0.4rem 0.875rem',
-              fontFamily: F,
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              border: 'none',
-              borderBottom: i === activeTab ? '2px solid #FF6600' : '2px solid transparent',
-              cursor: 'pointer',
-              background: 'transparent',
-              color: i === activeTab ? '#FF6600' : '#444444',
-              transition: 'color 0.15s',
-            }}
-          >
-            {f.label}
-          </button>
-        ))}
+      {/* Source label */}
+      <div style={{ padding: '0.35rem 0.875rem', borderBottom: '1px solid #2a2a2a', color: '#444444', fontFamily: F, fontSize: '0.675rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        BBC BUSINESS · FINANCIAL MARKETS
       </div>
 
       {/* Feed */}
@@ -103,36 +75,22 @@ export default function NewsPanel() {
             href={item.link}
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              display: 'block',
-              padding: '0.625rem 0.875rem',
-              borderBottom: '1px solid #1a1a1a',
-              textDecoration: 'none',
-              transition: 'background 0.15s',
-            }}
+            style={{ display: 'block', padding: '0.625rem 0.875rem', borderBottom: '1px solid #1a1a1a', textDecoration: 'none', transition: 'background 0.15s' }}
             onMouseEnter={e => e.currentTarget.style.background = '#111111'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             <div style={{ color: '#E0E0E0', fontFamily: F, fontSize: '0.8rem', lineHeight: 1.4, marginBottom: '0.25rem' }}>
               {item.title}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ color: '#444444', fontFamily: F, fontSize: '0.675rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                {timeAgo(item.pubDate)}
-              </span>
-              {item.author && (
-                <>
-                  <span style={{ color: '#2a2a2a' }}>·</span>
-                  <span style={{ color: '#444444', fontFamily: F, fontSize: '0.675rem' }}>{item.author}</span>
-                </>
-              )}
+            <div style={{ color: '#444444', fontFamily: F, fontSize: '0.675rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {timeAgo(item.pubDate)}
             </div>
           </a>
         ))}
       </div>
 
       <div style={{ padding: '0.5rem 0.875rem', borderTop: '1px solid #1a1a1a', color: '#2a2a2a', fontFamily: F, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-        Via RSS · Auto-refreshes on tab switch
+        Via BBC RSS · Refreshes on page load
       </div>
     </div>
   );
