@@ -19,7 +19,7 @@ export default function LiveCalculationsPanel({ tradeValues, capital, onLogWin, 
       <div className="panel-header">
         <span style={{ display: 'inline-block', width: 8, height: 8, background: '#FF6600' }}></span>
         LIVE CALCULATIONS
-        <span style={{ marginLeft: 'auto', fontFamily: "'Roboto Mono', monospace", fontSize: '0.625rem' }}>
+        <span style={{ marginLeft: 'auto', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem' }}>
           {ready
             ? <span style={{ color: '#00E676' }}>● LIVE</span>
             : <span style={{ color: '#333333' }}>○ ENTER VALUES</span>
@@ -58,7 +58,7 @@ export default function LiveCalculationsPanel({ tradeValues, capital, onLogWin, 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
           <button
             className="btn-win"
-            style={{ padding: '0.875rem', fontSize: '1rem', opacity: ready ? 1 : 0.3, cursor: ready ? 'pointer' : 'not-allowed' }}
+            style={{ padding: '0.875rem', fontSize: '1.0625rem', opacity: ready ? 1 : 0.3, cursor: ready ? 'pointer' : 'not-allowed' }}
             onClick={onLogWin}
             disabled={!ready}
           >
@@ -66,7 +66,7 @@ export default function LiveCalculationsPanel({ tradeValues, capital, onLogWin, 
           </button>
           <button
             className="btn-loss"
-            style={{ padding: '0.875rem', fontSize: '1rem', opacity: ready ? 1 : 0.3, cursor: ready ? 'pointer' : 'not-allowed' }}
+            style={{ padding: '0.875rem', fontSize: '1.0625rem', opacity: ready ? 1 : 0.3, cursor: ready ? 'pointer' : 'not-allowed' }}
             onClick={onLogLoss}
             disabled={!ready}
           >
@@ -81,7 +81,7 @@ export default function LiveCalculationsPanel({ tradeValues, capital, onLogWin, 
 function MetricSection({ label, children }) {
   return (
     <div style={{ marginBottom: '0.875rem' }}>
-      <div style={{ color: '#444444', fontFamily: "'Roboto Mono', monospace", fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '0.25rem', paddingLeft: '0.25rem' }}>
+      <div style={{ color: '#444444', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '0.25rem', paddingLeft: '0.25rem' }}>
         {label}
       </div>
       <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
@@ -94,8 +94,8 @@ function MetricSection({ label, children }) {
 function MetricRow({ label, value, color = '#E0E0E0' }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.375rem 0.75rem', borderBottom: '1px solid #1a1a1a' }}>
-      <span style={{ color: '#888888', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem' }}>{label}</span>
-      <span style={{ color, fontFamily: "'Roboto Mono', monospace", fontSize: '0.875rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      <span style={{ color: '#888888', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem' }}>{label}</span>
+      <span style={{ color, fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
     </div>
   );
 }

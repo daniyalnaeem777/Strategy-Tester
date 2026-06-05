@@ -6,7 +6,7 @@ const tooltipStyle = {
   contentStyle: {
     background: '#0a0a0a',
     border: '1px solid #FF6600',
-    fontFamily: "'Roboto Mono', monospace",
+    fontFamily: "Helvetica, Arial, sans-serif",
     fontSize: '11px',
     color: '#E0E0E0',
   },
@@ -15,7 +15,7 @@ const tooltipStyle = {
 
 function axisProps() {
   return {
-    tick: { fill: '#888888', fontFamily: "'Roboto Mono', monospace", fontSize: 10 },
+    tick: { fill: '#888888', fontFamily: "Helvetica, Arial, sans-serif", fontSize: 10 },
     axisLine: { stroke: '#2a2a2a' },
     tickLine: false,
   };
@@ -97,7 +97,7 @@ function ChartPanel({ title, children }) {
 
 function BarGroupChart({ data, suffix, isDollar }) {
   if (!data.length) {
-    return <div style={{ height: 210, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444444', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem' }}>NO DATA</div>;
+    return <div style={{ height: 210, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444444', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem' }}>NO DATA</div>;
   }
   return (
     <ResponsiveContainer width="100%" height={210}>

@@ -14,7 +14,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-[#0a0a0a] font-sans">
-        {hasSession && <Header session={session} />}
+        {hasSession && <Header session={session} onExit={newSession} />}
         <Routes>
           <Route
             path="/"

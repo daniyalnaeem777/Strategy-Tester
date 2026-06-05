@@ -36,10 +36,10 @@ export default function LiveSession({ session, logTrade }) {
       {/* Session banner */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
         <div>
-          <div style={{ color: '#FF6600', fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: '0.9375rem' }}>
+          <div style={{ color: '#FF6600', fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, fontSize: '0.9375rem' }}>
             {session.name || 'LIVE SESSION'}
           </div>
-          <div style={{ color: '#444444', fontFamily: "'Roboto Mono', monospace", fontSize: '0.7rem' }}>
+          <div style={{ color: '#444444', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '0.8rem' }}>
             {session.currency} · Capital: ${session.currentCapital?.toLocaleString()} · {session.trades?.length || 0} trades
           </div>
         </div>
@@ -47,8 +47,8 @@ export default function LiveSession({ session, logTrade }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {flash && (
             <div style={{
-              fontFamily: "'Roboto Mono', monospace",
-              fontSize: '0.875rem',
+              fontFamily: "Helvetica, Arial, sans-serif",
+              fontSize: '1.0625rem',
               fontWeight: 700,
               padding: '0.25rem 0.75rem',
               border: `1px solid ${flash === 'WIN' ? '#00E676' : '#FF1744'}`,
@@ -62,7 +62,7 @@ export default function LiveSession({ session, logTrade }) {
           {(session.trades?.length || 0) > 0 && (
             <button
               className="btn-amber"
-              style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem' }}
+              style={{ fontSize: '1.0625rem', padding: '0.375rem 0.75rem' }}
               onClick={() => navigate('/report')}
             >
               VIEW REPORT →

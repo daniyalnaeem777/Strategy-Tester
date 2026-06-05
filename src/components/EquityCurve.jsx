@@ -14,15 +14,15 @@ function CustomTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div style={{ background: '#0a0a0a', border: '1px solid #FF6600', padding: '0.625rem 0.875rem', fontFamily: "'Roboto Mono', monospace" }}>
-      <div style={{ color: '#FF6600', fontSize: '0.7rem', marginBottom: '0.25rem' }}>TRADE {d.trade}</div>
-      <div style={{ color: '#E0E0E0', fontSize: '0.75rem' }}>Capital: {fmtDollar(d.capital)}</div>
+    <div style={{ background: '#0a0a0a', border: '1px solid #FF6600', padding: '0.625rem 0.875rem', fontFamily: "Helvetica, Arial, sans-serif" }}>
+      <div style={{ color: '#FF6600', fontSize: '0.8rem', marginBottom: '0.25rem' }}>TRADE {d.trade}</div>
+      <div style={{ color: '#E0E0E0', fontSize: '1.0625rem' }}>Capital: {fmtDollar(d.capital)}</div>
       {d.outcome && (
         <>
-          <div style={{ color: d.direction === 'LONG' ? '#00E676' : '#FF1744', fontSize: '0.7rem' }}>
+          <div style={{ color: d.direction === 'LONG' ? '#00E676' : '#FF1744', fontSize: '0.8rem' }}>
             {d.direction === 'LONG' ? '▲' : '▼'} {d.direction} — {d.outcome}
           </div>
-          <div style={{ color: d.pnl >= 0 ? '#00E676' : '#FF1744', fontSize: '0.75rem', fontWeight: 500 }}>
+          <div style={{ color: d.pnl >= 0 ? '#00E676' : '#FF1744', fontSize: '1.0625rem', fontWeight: 500 }}>
             {d.pnl >= 0 ? '+' : ''}{fmtDollar(d.pnl)}
           </div>
         </>
@@ -59,7 +59,7 @@ export default function EquityCurve({ trades, startingCapital, id = 'equity-curv
       <div className="panel-header">
         <span style={{ display: 'inline-block', width: 8, height: 8, background: '#FF6600' }}></span>
         EQUITY CURVE
-        <span style={{ marginLeft: 'auto', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem', color: lineColor }}>
+        <span style={{ marginLeft: 'auto', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem', color: lineColor }}>
           {isPositive ? '▲' : '▼'} {(pnlDiff >= 0 ? '+' : '') + fmtDollar(pnlDiff)} ({isPositive ? '+' : ''}{pnlPct}%)
         </span>
       </div>
@@ -69,14 +69,14 @@ export default function EquityCurve({ trades, startingCapital, id = 'equity-curv
             <CartesianGrid strokeDasharray="2 5" stroke="#1a1a1a" />
             <XAxis
               dataKey="trade"
-              tick={{ fill: '#888888', fontFamily: "'Roboto Mono', monospace", fontSize: 10 }}
+              tick={{ fill: '#888888', fontFamily: "Helvetica, Arial, sans-serif", fontSize: 10 }}
               axisLine={{ stroke: '#2a2a2a' }}
               tickLine={false}
-              label={{ value: 'TRADE #', position: 'insideBottom', offset: -8, fill: '#444444', fontSize: 9, fontFamily: "'Roboto Mono', monospace" }}
+              label={{ value: 'TRADE #', position: 'insideBottom', offset: -8, fill: '#444444', fontSize: 9, fontFamily: "Helvetica, Arial, sans-serif" }}
             />
             <YAxis
               domain={[minVal, maxVal]}
-              tick={{ fill: '#888888', fontFamily: "'Roboto Mono', monospace", fontSize: 10 }}
+              tick={{ fill: '#888888', fontFamily: "Helvetica, Arial, sans-serif", fontSize: 10 }}
               axisLine={{ stroke: '#2a2a2a' }}
               tickLine={false}
               tickFormatter={v => {
@@ -92,7 +92,7 @@ export default function EquityCurve({ trades, startingCapital, id = 'equity-curv
               stroke="#FF6600"
               strokeDasharray="5 4"
               strokeOpacity={0.5}
-              label={{ value: 'START', fill: '#FF6600', fontSize: 8, fontFamily: "'Roboto Mono', monospace", position: 'insideTopRight' }}
+              label={{ value: 'START', fill: '#FF6600', fontSize: 8, fontFamily: "Helvetica, Arial, sans-serif", position: 'insideTopRight' }}
             />
             <Line
               type="monotone"

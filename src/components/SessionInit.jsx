@@ -25,14 +25,14 @@ export default function SessionInit({ onInit }) {
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
             <div style={{ width: '2rem', height: '1px', background: '#FF6600' }}></div>
-            <span style={{ color: '#FF6600', fontFamily: "'Roboto Mono', monospace", fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.3em' }}>Fynalyse</span>
+            <span style={{ color: '#FF6600', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.3em' }}>Fynalyse</span>
             <div style={{ width: '2rem', height: '1px', background: '#FF6600' }}></div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <span style={{ color: '#E0E0E0', fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: '2rem', letterSpacing: '0.15em' }}>TP/SL</span>
-            <span style={{ background: '#FF6600', color: '#000000', fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: '0.875rem', padding: '0.125rem 0.5rem', letterSpacing: '0.1em' }}>PRO</span>
+            <span style={{ color: '#E0E0E0', fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, fontSize: '2rem', letterSpacing: '0.15em' }}>TP/SL</span>
+            <span style={{ background: '#FF6600', color: '#000000', fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, fontSize: '1.0625rem', padding: '0.125rem 0.5rem', letterSpacing: '0.1em' }}>PRO</span>
           </div>
-          <p style={{ color: '#888888', fontFamily: "'Roboto Mono', monospace", fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+          <p style={{ color: '#888888', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
             Bloomberg-Grade Strategy Tester
           </p>
         </div>
@@ -52,7 +52,7 @@ export default function SessionInit({ onInit }) {
                 Starting Capital
               </label>
               <div style={{ display: 'flex' }}>
-                <div style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRight: 'none', padding: '0 0.75rem', display: 'flex', alignItems: 'center', color: '#888888', fontFamily: "'Roboto Mono', monospace", fontSize: '0.875rem', flexShrink: 0 }}>
+                <div style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRight: 'none', padding: '0 0.75rem', display: 'flex', alignItems: 'center', color: '#888888', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem', flexShrink: 0 }}>
                   {currencySymbol}
                 </div>
                 <input
@@ -65,7 +65,7 @@ export default function SessionInit({ onInit }) {
                   style={{ flex: 1 }}
                 />
               </div>
-              {error && <div style={{ color: '#FF1744', fontFamily: "'Roboto Mono', monospace", fontSize: '0.7rem', marginTop: '0.25rem' }}>{error}</div>}
+              {error && <div style={{ color: '#FF1744', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '0.8rem', marginTop: '0.25rem' }}>{error}</div>}
             </div>
 
             {/* Currency */}
@@ -78,7 +78,7 @@ export default function SessionInit({ onInit }) {
                   <option value="GBP">GBP — British Pound</option>
                   <option value="EUR">EUR — Euro</option>
                 </select>
-                <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#FF6600', fontSize: '0.7rem', pointerEvents: 'none' }}>▼</div>
+                <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#FF6600', fontSize: '0.8rem', pointerEvents: 'none' }}>▼</div>
               </div>
             </div>
 
@@ -120,7 +120,7 @@ export default function SessionInit({ onInit }) {
           </div>
         </div>
 
-        <p style={{ textAlign: 'center', color: '#2a2a2a', fontFamily: "'Roboto Mono', monospace", fontSize: '0.7rem', marginTop: '1rem' }}>
+        <p style={{ textAlign: 'center', color: '#2a2a2a', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '0.8rem', marginTop: '1rem' }}>
           Session data stored locally in browser · No server required
         </p>
       </div>
@@ -147,9 +147,9 @@ function ModeButton({ label, sublabel, icon, primary, onClick }) {
         transition: 'all 0.15s',
       }}
     >
-      <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: '1.25rem', marginBottom: '0.25rem' }}>{icon}</div>
-      <div style={{ fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</div>
-      <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: '0.675rem', marginTop: '0.125rem', opacity: 0.7 }}>{sublabel}</div>
+      <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.25rem', marginBottom: '0.25rem' }}>{icon}</div>
+      <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, fontSize: '1.0625rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</div>
+      <div style={{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: '0.675rem', marginTop: '0.125rem', opacity: 0.7 }}>{sublabel}</div>
     </button>
   );
 }

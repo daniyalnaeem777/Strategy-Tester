@@ -134,17 +134,17 @@ VERDICT: (must be exactly one of: STRONG EDGE DETECTED / REFINE AND RETEST / NO 
       <div className="panel-header">
         <span style={{ display: 'inline-block', width: 8, height: 8, background: '#FF6600' }}></span>
         AI STRATEGY ANALYSIS
-        <span style={{ color: '#333333', fontFamily: "'Roboto Mono', monospace", fontSize: '0.625rem', marginLeft: '0.5rem' }}>
+        <span style={{ color: '#333333', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem', marginLeft: '0.5rem' }}>
           claude-sonnet-4-20250514
         </span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
           {!aiAnalysis && !loading && (
-            <button className="btn-amber" style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }} onClick={() => runAnalysis()}>
+            <button className="btn-amber" style={{ fontSize: '1.0625rem', padding: '0.25rem 0.75rem' }} onClick={() => runAnalysis()}>
               ▶ RUN ANALYSIS
             </button>
           )}
           {aiAnalysis && !loading && (
-            <button className="btn-ghost" style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }} onClick={() => runAnalysis()}>
+            <button className="btn-ghost" style={{ fontSize: '1.0625rem', padding: '0.25rem 0.75rem' }} onClick={() => runAnalysis()}>
               ↺ RE-ANALYSE
             </button>
           )}
@@ -154,11 +154,11 @@ VERDICT: (must be exactly one of: STRONG EDGE DETECTED / REFINE AND RETEST / NO 
       <div style={{ padding: '1rem' }}>
         {!aiAnalysis && !loading && !error && (
           <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-            <div style={{ color: '#333333', fontFamily: "'Roboto Mono', monospace", fontSize: '2.5rem', marginBottom: '1rem' }}>◈</div>
-            <div style={{ color: '#888888', fontFamily: "'Roboto Mono', monospace", fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+            <div style={{ color: '#333333', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '2.5rem', marginBottom: '1rem' }}>◈</div>
+            <div style={{ color: '#888888', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem', marginBottom: '0.5rem' }}>
               AI analysis not yet generated
             </div>
-            <div style={{ color: '#444444', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem', marginBottom: '1.5rem' }}>
+            <div style={{ color: '#444444', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem', marginBottom: '1.5rem' }}>
               Requires VITE_ANTHROPIC_API_KEY in .env
             </div>
             <button className="btn-amber" style={{ padding: '0.625rem 1.5rem' }} onClick={() => runAnalysis()}>
@@ -169,7 +169,7 @@ VERDICT: (must be exactly one of: STRONG EDGE DETECTED / REFINE AND RETEST / NO 
 
         {loading && (
           <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-            <div style={{ color: '#FF6600', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '1rem' }}>
+            <div style={{ color: '#FF6600', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '1rem' }}>
               ANALYSING TRADE DATA...
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '1rem' }}>
@@ -181,7 +181,7 @@ VERDICT: (must be exactly one of: STRONG EDGE DETECTED / REFINE AND RETEST / NO 
                 }} />
               ))}
             </div>
-            <div style={{ color: '#444444', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem' }}>
+            <div style={{ color: '#444444', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem' }}>
               Sending {trades.length} trades to Claude API...
             </div>
             <style>{`
@@ -195,8 +195,8 @@ VERDICT: (must be exactly one of: STRONG EDGE DETECTED / REFINE AND RETEST / NO 
 
         {error && !loading && (
           <div style={{ padding: '1rem', border: '1px solid #FF1744', background: 'rgba(255,23,68,0.05)', marginBottom: '1rem' }}>
-            <div style={{ color: '#FF1744', fontFamily: "'Roboto Mono', monospace", fontSize: '0.875rem' }}>{error}</div>
-            <button className="btn-ghost" style={{ marginTop: '0.75rem', fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderColor: '#FF1744', color: '#FF1744' }} onClick={() => runAnalysis()}>
+            <div style={{ color: '#FF1744', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem' }}>{error}</div>
+            <button className="btn-ghost" style={{ marginTop: '0.75rem', fontSize: '1.0625rem', padding: '0.375rem 0.75rem', borderColor: '#FF1744', color: '#FF1744' }} onClick={() => runAnalysis()}>
               ↺ RETRY
             </button>
           </div>
@@ -213,10 +213,10 @@ VERDICT: (must be exactly one of: STRONG EDGE DETECTED / REFINE AND RETEST / NO 
                 textAlign: 'center',
                 marginBottom: '1.5rem',
               }}>
-                <div style={{ color: '#888888', fontFamily: "'Roboto Mono', monospace", fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.25em', marginBottom: '0.25rem' }}>
+                <div style={{ color: '#888888', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem', textTransform: 'uppercase', letterSpacing: '0.25em', marginBottom: '0.25rem' }}>
                   AI VERDICT
                 </div>
-                <div style={{ color: verdictColor, fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: '1.1rem', letterSpacing: '0.05em' }}>
+                <div style={{ color: verdictColor, fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, fontSize: '1.1rem', letterSpacing: '0.05em' }}>
                   {verdictText}
                 </div>
               </div>
@@ -228,8 +228,8 @@ VERDICT: (must be exactly one of: STRONG EDGE DETECTED / REFINE AND RETEST / NO 
                 <div key={section.title} style={{ borderLeft: '2px solid #FF6600', paddingLeft: '1rem' }}>
                   <div style={{
                     color: '#FF6600',
-                    fontFamily: "'Roboto Mono', monospace",
-                    fontSize: '0.7rem',
+                    fontFamily: "Helvetica, Arial, sans-serif",
+                    fontSize: '0.8rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.15em',
                     marginBottom: '0.5rem',
@@ -238,7 +238,7 @@ VERDICT: (must be exactly one of: STRONG EDGE DETECTED / REFINE AND RETEST / NO 
                   </div>
                   <div style={{
                     color: '#E0E0E0',
-                    fontFamily: "'Roboto Mono', monospace",
+                    fontFamily: "Helvetica, Arial, sans-serif",
                     fontSize: '0.8125rem',
                     lineHeight: 1.7,
                     whiteSpace: 'pre-wrap',

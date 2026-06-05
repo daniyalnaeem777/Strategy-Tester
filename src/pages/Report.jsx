@@ -99,8 +99,8 @@ export default function Report({ session, setAiAnalysis, newSession }) {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ color: '#444444', fontFamily: "'Roboto Mono', monospace", fontSize: '3rem', marginBottom: '1rem' }}>◫</div>
-          <div style={{ color: '#888888', fontFamily: "'Roboto Mono', monospace", fontSize: '0.875rem', marginBottom: '1rem' }}>No trades to report</div>
+          <div style={{ color: '#444444', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '3rem', marginBottom: '1rem' }}>◫</div>
+          <div style={{ color: '#888888', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem', marginBottom: '1rem' }}>No trades to report</div>
           <button className="btn-amber" style={{ padding: '0.5rem 1.5rem' }} onClick={() => navigate(session?.mode === 'LIVE' ? '/live' : '/backtest')}>
             ← BACK TO SESSION
           </button>
@@ -117,10 +117,10 @@ export default function Report({ session, setAiAnalysis, newSession }) {
       {/* Top action bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
         <div>
-          <div style={{ color: '#FF6600', fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: '1rem' }}>
+          <div style={{ color: '#FF6600', fontFamily: "Helvetica, Arial, sans-serif", fontWeight: 700, fontSize: '1.0625rem' }}>
             {session?.name || 'BACKTEST REPORT'}
           </div>
-          <div style={{ color: '#444444', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem' }}>
+          <div style={{ color: '#444444', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem' }}>
             {trades.length} trades · {session?.currency} · Starting capital: ${session?.startingCapital?.toLocaleString()}
           </div>
         </div>
@@ -128,7 +128,7 @@ export default function Report({ session, setAiAnalysis, newSession }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button
             className="btn-amber"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', opacity: isGenerating || generatingAI ? 0.6 : 1, cursor: isGenerating || generatingAI ? 'not-allowed' : 'pointer' }}
+            style={{ padding: '0.5rem 1rem', fontSize: '1.0625rem', opacity: isGenerating || generatingAI ? 0.6 : 1, cursor: isGenerating || generatingAI ? 'not-allowed' : 'pointer' }}
             onClick={handleGeneratePDF}
             disabled={isGenerating || generatingAI}
           >
@@ -139,11 +139,11 @@ export default function Report({ session, setAiAnalysis, newSession }) {
               : '↓ GENERATE REPORT'}
           </button>
 
-          <button className="btn-ghost" style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem' }} onClick={handleExportCSV}>
+          <button className="btn-ghost" style={{ padding: '0.5rem 0.75rem', fontSize: '1.0625rem' }} onClick={handleExportCSV}>
             ↓ EXPORT CSV
           </button>
 
-          <button className="btn-ghost" style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem' }} onClick={handleShareSummary}>
+          <button className="btn-ghost" style={{ padding: '0.5rem 0.75rem', fontSize: '1.0625rem' }} onClick={handleShareSummary}>
             {copied ? '✓ COPIED' : '⎘ SHARE'}
           </button>
 
@@ -153,8 +153,8 @@ export default function Report({ session, setAiAnalysis, newSession }) {
               border: '1px solid #FF1744',
               color: '#FF1744',
               background: 'transparent',
-              fontFamily: "'Roboto Mono', monospace",
-              fontSize: '0.75rem',
+              fontFamily: "Helvetica, Arial, sans-serif",
+              fontSize: '1.0625rem',
               padding: '0.5rem 0.75rem',
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
@@ -178,7 +178,7 @@ export default function Report({ session, setAiAnalysis, newSession }) {
               }} />
             ))}
           </div>
-          <span style={{ color: '#FF6600', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          <span style={{ color: '#FF6600', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             {generatingAI ? 'Generating AI analysis before building report...' : currentStepLabel}
           </span>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '4px' }}>
@@ -194,12 +194,12 @@ export default function Report({ session, setAiAnalysis, newSession }) {
 
       {/* Success / error banners */}
       {pdfDone && (
-        <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', border: '1px solid #00E676', background: 'rgba(0,230,118,0.05)', color: '#00E676', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem' }}>
+        <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', border: '1px solid #00E676', background: 'rgba(0,230,118,0.05)', color: '#00E676', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem' }}>
           ✓ {pdfDone}
         </div>
       )}
       {pdfError && (
-        <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', border: '1px solid #FF1744', background: 'rgba(255,23,68,0.05)', color: '#FF1744', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem' }}>
+        <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', border: '1px solid #FF1744', background: 'rgba(255,23,68,0.05)', color: '#FF1744', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem' }}>
           ✗ {pdfError}
         </div>
       )}

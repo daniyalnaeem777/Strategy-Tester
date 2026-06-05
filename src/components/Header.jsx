@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { fmtDollar } from '../utils/formatters.js';
 
-export default function Header({ session }) {
+export default function Header({ session, onExit }) {
   const [time, setTime] = useState(new Date());
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,47 +20,51 @@ export default function Header({ session }) {
   if (session?.mode === 'BACKTEST') navItems.push({ label: 'BACKTEST', path: '/backtest' });
   if (session?.trades?.length > 0) navItems.push({ label: 'REPORT', path: '/report' });
 
+  const F = 'Helvetica, Arial, sans-serif';
+
   return (
     <header style={{
       background: '#0a0a0a',
       borderBottom: '1px solid #2a2a2a',
       padding: '0 1rem',
-      height: '44px',
+      height: '48px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       position: 'sticky',
       top: 0,
       zIndex: 50,
+      gap: '0.75rem',
     }}>
+
       {/* Logo */}
       <button
-        onClick={() => navigate('/')}
-        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+        onClick={() => navigate(session?.mode === 'LIVE' ? '/live' : '/backtest')}
+        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}
       >
-        <span style={{ color: '#FF6600', fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: '1.1rem', letterSpacing: '0.15em' }}>TP/SL</span>
-        <span style={{ background: '#FF6600', color: '#000000', fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: '0.7rem', padding: '0.125rem 0.4rem', letterSpacing: '0.05em' }}>PRO</span>
-        <span style={{ color: '#2a2a2a', fontFamily: "'Roboto Mono', monospace", marginLeft: '0.25rem', display: 'none' }}>|</span>
+        <span style={{ color: '#FF6600', fontFamily: F, fontWeight: 700, fontSize: '1.15rem', letterSpacing: '0.1em' }}>TP/SL</span>
+        <span style={{ background: '#FF6600', color: '#000', fontFamily: F, fontWeight: 700, fontSize: '0.8rem', padding: '0.1rem 0.4rem' }}>PRO</span>
       </button>
 
-      {/* Nav */}
+      {/* Nav tabs */}
       {navItems.length > 0 && (
-        <nav style={{ display: 'flex', border: '1px solid #2a2a2a' }}>
+        <nav style={{ display: 'flex', border: '1px solid #2a2a2a', flexShrink: 0 }}>
           {navItems.map(item => (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
               style={{
-                padding: '0.25rem 0.75rem',
-                fontFamily: "'Roboto Mono', monospace",
-                fontSize: '0.7rem',
+                padding: '0.3rem 0.875rem',
+                fontFamily: F,
+                fontSize: '0.8rem',
+                fontWeight: 600,
                 textTransform: 'uppercase',
-                letterSpacing: '0.1em',
+                letterSpacing: '0.08em',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'all 0.15s',
                 background: location.pathname === item.path ? '#FF6600' : 'transparent',
-                color: location.pathname === item.path ? '#000000' : '#888888',
+                color: location.pathname === item.path ? '#000' : '#888888',
               }}
             >
               {item.label}
@@ -69,8 +73,10 @@ export default function Header({ session }) {
         </nav>
       )}
 
-      {/* Right side stats + clock */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+      {/* Right: stats + exit + clock */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginLeft: 'auto' }}>
+
+        {/* Session stats */}
         {session?.mode && session?.trades?.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
             <Stat label="TRADES" value={String(session.trades.length)} />
@@ -78,7 +84,12 @@ export default function Header({ session }) {
             <Stat label="P&L" value={(sessionPnL >= 0 ? '+' : '') + fmtDollar(sessionPnL)} color={pnlColor} />
           </div>
         )}
-        <div style={{ color: '#FF6600', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem', fontVariantNumeric: 'tabular-nums', minWidth: '70px', textAlign: 'right' }}>
+
+        {/* EXIT SESSION button */}
+        <ExitButton onExit={onExit} navigate={navigate} />
+
+        {/* Clock */}
+        <div style={{ color: '#FF6600', fontFamily: F, fontSize: '0.9rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums', minWidth: '72px', textAlign: 'right' }}>
           {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
         </div>
       </div>
@@ -86,11 +97,57 @@ export default function Header({ session }) {
   );
 }
 
+function ExitButton({ onExit, navigate }) {
+  const [confirm, setConfirm] = useState(false);
+  const F = 'Helvetica, Arial, sans-serif';
+
+  if (confirm) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+        <span style={{ color: '#888888', fontFamily: F, fontSize: '0.8rem' }}>Exit session?</span>
+        <button
+          onClick={() => { onExit(); navigate('/'); }}
+          style={{ background: '#FF1744', color: '#fff', border: 'none', fontFamily: F, fontSize: '0.8rem', fontWeight: 700, padding: '0.25rem 0.625rem', cursor: 'pointer', textTransform: 'uppercase' }}
+        >YES</button>
+        <button
+          onClick={() => setConfirm(false)}
+          style={{ background: 'transparent', color: '#888888', border: '1px solid #2a2a2a', fontFamily: F, fontSize: '0.8rem', padding: '0.25rem 0.625rem', cursor: 'pointer', textTransform: 'uppercase' }}
+        >NO</button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirm(true)}
+      style={{
+        background: 'transparent',
+        color: '#888888',
+        border: '1px solid #2a2a2a',
+        fontFamily: F,
+        fontSize: '0.8rem',
+        fontWeight: 600,
+        padding: '0.3rem 0.75rem',
+        cursor: 'pointer',
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+        transition: 'all 0.15s',
+        flexShrink: 0,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = '#FF1744'; e.currentTarget.style.color = '#FF1744'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2a2a'; e.currentTarget.style.color = '#888888'; }}
+    >
+      ✕ EXIT
+    </button>
+  );
+}
+
 function Stat({ label, value, color = '#E0E0E0' }) {
+  const F = 'Helvetica, Arial, sans-serif';
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-      <span style={{ color: '#444444', fontFamily: "'Roboto Mono', monospace", fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.15em' }}>{label}</span>
-      <span style={{ color, fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      <span style={{ color: '#444444', fontFamily: F, fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{label}</span>
+      <span style={{ color, fontFamily: F, fontSize: '0.9rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
     </div>
   );
 }

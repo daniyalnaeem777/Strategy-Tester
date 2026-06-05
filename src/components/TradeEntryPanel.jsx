@@ -51,9 +51,9 @@ export default function TradeEntryPanel({ values, onChange }) {
                 border: `2px solid ${longActive ? '#00E676' : '#2a2a2a'}`,
                 background: longActive ? '#00E676' : 'transparent',
                 color: longActive ? '#000000' : '#888888',
-                fontFamily: "'Roboto Mono', monospace",
+                fontFamily: "Helvetica, Arial, sans-serif",
                 fontWeight: 700,
-                fontSize: '0.875rem',
+                fontSize: '1.0625rem',
                 padding: '0.75rem',
                 textTransform: 'uppercase',
                 letterSpacing: '0.1em',
@@ -69,9 +69,9 @@ export default function TradeEntryPanel({ values, onChange }) {
                 border: `2px solid ${shortActive ? '#FF1744' : '#2a2a2a'}`,
                 background: shortActive ? '#FF1744' : 'transparent',
                 color: shortActive ? '#ffffff' : '#888888',
-                fontFamily: "'Roboto Mono', monospace",
+                fontFamily: "Helvetica, Arial, sans-serif",
                 fontWeight: 700,
-                fontSize: '0.875rem',
+                fontSize: '1.0625rem',
                 padding: '0.75rem',
                 textTransform: 'uppercase',
                 letterSpacing: '0.1em',
@@ -117,7 +117,7 @@ export default function TradeEntryPanel({ values, onChange }) {
                 <option key={o} value={o}>{o}x ATR</option>
               ))}
             </select>
-            <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#FF6600', fontSize: '0.75rem', pointerEvents: 'none' }}>▼</div>
+            <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#FF6600', fontSize: '1.0625rem', pointerEvents: 'none' }}>▼</div>
           </div>
         </div>
 
@@ -134,7 +134,7 @@ export default function TradeEntryPanel({ values, onChange }) {
                 <option key={o} value={o}>{o}x ATR</option>
               ))}
             </select>
-            <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#FF6600', fontSize: '0.75rem', pointerEvents: 'none' }}>▼</div>
+            <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#FF6600', fontSize: '1.0625rem', pointerEvents: 'none' }}>▼</div>
           </div>
         </div>
 
@@ -151,7 +151,7 @@ export default function TradeEntryPanel({ values, onChange }) {
                 <option key={o} value={o}>{o}x</option>
               ))}
             </select>
-            <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#FF6600', fontSize: '0.75rem', pointerEvents: 'none' }}>▼</div>
+            <div style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#FF6600', fontSize: '1.0625rem', pointerEvents: 'none' }}>▼</div>
           </div>
         </div>
 

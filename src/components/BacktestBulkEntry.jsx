@@ -74,7 +74,7 @@ export default function BacktestBulkEntry({ startingCapital, onRunBacktest }) {
   const th = {
     padding: '0.5rem 0.625rem',
     color: '#444444',
-    fontFamily: "'Roboto Mono', monospace",
+    fontFamily: "Helvetica, Arial, sans-serif",
     textTransform: 'uppercase',
     letterSpacing: '0.1em',
     fontSize: '0.6rem',
@@ -89,7 +89,7 @@ export default function BacktestBulkEntry({ startingCapital, onRunBacktest }) {
       <div className="panel-header">
         <span style={{ display: 'inline-block', width: 8, height: 8, background: '#FF6600' }}></span>
         BACKTEST BULK ENTRY
-        <span style={{ marginLeft: 'auto', color: '#888888', fontFamily: "'Roboto Mono', monospace", fontSize: '0.7rem' }}>
+        <span style={{ marginLeft: 'auto', color: '#888888', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '0.8rem' }}>
           {rows.length} ROWS · {validCount} VALID
         </span>
       </div>
@@ -107,7 +107,7 @@ export default function BacktestBulkEntry({ startingCapital, onRunBacktest }) {
 
       {/* Table */}
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '860px', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '860px', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem' }}>
           <thead>
             <tr>
               <th style={th}>#</th>
@@ -135,7 +135,7 @@ export default function BacktestBulkEntry({ startingCapital, onRunBacktest }) {
                     style={{
                       background: '#0a0a0a', border: '1px solid #2a2a2a',
                       color: row.direction === 'LONG' ? '#00E676' : '#FF1744',
-                      fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem',
+                      fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem',
                       padding: '0.25rem 0.375rem', outline: 'none', width: '90px',
                     }}
                   >
@@ -176,7 +176,7 @@ export default function BacktestBulkEntry({ startingCapital, onRunBacktest }) {
                 <td style={{ padding: '0.375rem 0.375rem' }}>
                   <button
                     onClick={() => deleteRow(row.id)}
-                    style={{ color: '#444444', background: 'none', border: 'none', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem' }}
+                    style={{ color: '#444444', background: 'none', border: 'none', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.0625rem' }}
                     onMouseEnter={e => e.currentTarget.style.color = '#FF1744'}
                     onMouseLeave={e => e.currentTarget.style.color = '#444444'}
                   >✕</button>
@@ -207,8 +207,8 @@ const cellInput = {
   background: '#0a0a0a',
   border: '1px solid #2a2a2a',
   color: '#E0E0E0',
-  fontFamily: "'Roboto Mono', monospace",
-  fontSize: '0.75rem',
+  fontFamily: "Helvetica, Arial, sans-serif",
+  fontSize: '1.0625rem',
   padding: '0.25rem 0.375rem',
   outline: 'none',
   width: '100px',
@@ -218,8 +218,8 @@ const cellSelect = {
   background: '#0a0a0a',
   border: '1px solid #2a2a2a',
   color: '#E0E0E0',
-  fontFamily: "'Roboto Mono', monospace",
-  fontSize: '0.75rem',
+  fontFamily: "Helvetica, Arial, sans-serif",
+  fontSize: '1.0625rem',
   padding: '0.25rem 0.375rem',
   outline: 'none',
   width: '72px',
@@ -228,8 +228,8 @@ const cellSelect = {
 const actionBtnStyle = {
   background: 'transparent',
   color: '#FF6600',
-  fontFamily: "'Roboto Mono', monospace",
-  fontSize: '0.75rem',
+  fontFamily: "Helvetica, Arial, sans-serif",
+  fontSize: '1.0625rem',
   padding: '0.375rem 0.75rem',
   border: '1px solid #FF6600',
   textTransform: 'uppercase',

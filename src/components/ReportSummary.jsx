@@ -71,7 +71,7 @@ export default function ReportSummary({ stats, startingCapital }) {
 function Section({ label, children }) {
   return (
     <div style={{ marginBottom: '1rem' }}>
-      <div style={{ color: '#444444', fontFamily: "'Roboto Mono', monospace", fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '0.25rem', paddingLeft: '0.25rem' }}>
+      <div style={{ color: '#444444', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '0.25rem', paddingLeft: '0.25rem' }}>
         {label}
       </div>
       <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a' }}>
@@ -84,8 +84,8 @@ function Section({ label, children }) {
 function Row({ label, value, color = '#E0E0E0' }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.375rem 0.75rem', borderBottom: '1px solid #1a1a1a' }}>
-      <span style={{ color: '#888888', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem' }}>{label}</span>
-      <span style={{ color, fontFamily: "'Roboto Mono', monospace", fontSize: '0.875rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      <span style={{ color: '#888888', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem' }}>{label}</span>
+      <span style={{ color, fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
     </div>
   );
 }

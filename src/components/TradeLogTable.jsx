@@ -24,7 +24,7 @@ export default function TradeLogTable({ trades, maxRows = 5, showAll = false }) 
           TRADE LOG
           <span style={{ marginLeft: 'auto', color: '#444444' }}>NO TRADES</span>
         </div>
-        <div style={{ padding: '1.5rem', textAlign: 'center', color: '#444444', fontFamily: "'Roboto Mono', monospace", fontSize: '0.875rem' }}>
+        <div style={{ padding: '1.5rem', textAlign: 'center', color: '#444444', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem' }}>
           No trades logged yet.
         </div>
       </div>
@@ -52,11 +52,11 @@ export default function TradeLogTable({ trades, maxRows = 5, showAll = false }) 
       <div className="panel-header">
         <span style={{ display: 'inline-block', width: 8, height: 8, background: '#FF6600' }}></span>
         TRADE LOG
-        {showAll && <span style={{ marginLeft: '0.5rem', color: '#444444', fontSize: '0.625rem' }}>CLICK HEADERS TO SORT</span>}
-        <span style={{ marginLeft: 'auto', color: '#888888', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem' }}>{trades.length} TOTAL</span>
+        {showAll && <span style={{ marginLeft: '0.5rem', color: '#444444', fontSize: '1.0625rem' }}>CLICK HEADERS TO SORT</span>}
+        <span style={{ marginLeft: 'auto', color: '#888888', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem' }}>{trades.length} TOTAL</span>
       </div>
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', fontFamily: "'Roboto Mono', monospace", fontSize: '0.75rem', borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', fontFamily: "Helvetica, Arial, sans-serif", fontSize: '1.0625rem', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #2a2a2a' }}>
               {COLS.map(col => (
@@ -68,7 +68,7 @@ export default function TradeLogTable({ trades, maxRows = 5, showAll = false }) 
                     color: sortKey === col.key && showAll ? '#FF6600' : '#444444',
                     textTransform: 'uppercase',
                     letterSpacing: '0.1em',
-                    fontSize: '0.625rem',
+                    fontSize: '1.0625rem',
                     textAlign: col.key === 'pnl' || col.key === 'capitalAfter' ? 'right' : 'left',
                     cursor: showAll ? 'pointer' : 'default',
                     userSelect: 'none',
@@ -99,7 +99,7 @@ export default function TradeLogTable({ trades, maxRows = 5, showAll = false }) 
                 <td style={{ padding: '0.5rem 0.75rem' }}>
                   <span style={{
                     padding: '0.125rem 0.5rem',
-                    fontSize: '0.625rem',
+                    fontSize: '1.0625rem',
                     textTransform: 'uppercase',
                     background: t.outcome === 'WIN' ? 'rgba(0,230,118,0.1)' : 'rgba(255,23,68,0.1)',
                     color: t.outcome === 'WIN' ? '#00E676' : '#FF1744',
