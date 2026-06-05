@@ -184,11 +184,12 @@ export async function generatePDF({ trades, stats, session, aiAnalysis, equityCu
   const equityEl = document.getElementById(equityCurveId);
   if (equityEl) {
     try {
-      const canvas = await html2canvas(equityEl, { backgroundColor: '#111111', scale: 2 });
+      const canvas = await html2canvas(equityEl, { backgroundColor: '#111111', scale: 2.5 });
       const imgData = canvas.toDataURL('image/png');
-      const imgH = (canvas.height / canvas.width) * (w - margin * 2);
-      doc.addImage(imgData, 'PNG', margin, y + 2, w - margin * 2, Math.min(imgH, 120));
-      y = y + Math.min(imgH, 120) + 8;
+      const naturalH = (canvas.height / canvas.width) * (w - margin * 2);
+      const imgH = Math.min(naturalH, h - y - 80);
+      doc.addImage(imgData, 'PNG', margin, y + 2, w - margin * 2, imgH);
+      y = y + imgH + 8;
     } catch (e) {}
   }
 
@@ -229,25 +230,37 @@ export async function generatePDF({ trades, stats, session, aiAnalysis, equityCu
   const chartImages = [];
   for (const el of chartEls) {
     try {
-      const c = await html2canvas(el, { backgroundColor: '#111111', scale: 2 });
-      chartImages.push(c.toDataURL('image/png'));
+      const c = await html2canvas(el, { backgroundColor: '#111111', scale: 2.5 });
+      chartImages.push({ data: c.toDataURL('image/png'), w: c.width, h: c.height });
     } catch (e) { chartImages.push(null); }
   }
 
-  // Place 2 per row; wrap to new page as needed
+  // Place 2 per row, preserving each chart's natural aspect ratio
   const cellW = (w - margin * 2 - 6) / 2;
-  const cellH = 55;
   let cx = margin, cy = y + 2;
+  let rowH = 0;
+
   chartImages.forEach((img, i) => {
     if (!img) return;
-    if (i > 0 && i % 2 === 0) { cy += cellH + 6; cx = margin; }
+    const cellH = Math.round((img.h / img.w) * cellW);
+
+    // Start a new row every 2 charts
+    if (i > 0 && i % 2 === 0) {
+      cy += rowH + 6;
+      cx = margin;
+      rowH = 0;
+    }
+
+    // New page if needed
     if (cy + cellH > h - 45) {
       doc.addPage();
       addHeader(doc, 'TRADE DISTRIBUTION', sessionName);
       addFooter(doc, doc.internal.getNumberOfPages(), sessionName);
-      cy = 30; cx = margin;
+      cy = 30; cx = margin; rowH = 0;
     }
-    doc.addImage(img, 'PNG', cx, cy, cellW, cellH);
+
+    doc.addImage(img.data, 'PNG', cx, cy, cellW, cellH);
+    rowH = Math.max(rowH, cellH);
     cx += cellW + 6;
   });
 
