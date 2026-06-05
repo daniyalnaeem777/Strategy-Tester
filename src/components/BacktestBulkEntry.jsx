@@ -150,12 +150,12 @@ function TradeCard({ row, idx, onUpdate, onDelete, canDelete }) {
   const isValid = row.entryPrice && row.atr && row.tpPrice &&
     parseFloat(row.entryPrice) > 0 && parseFloat(row.atr) > 0 && parseFloat(row.tpPrice) > 0;
 
-  const cardInput = { background: '#0a0a0a', border: '1px solid #2a2a2a', color: '#E0E0E0', fontFamily: F, fontSize: '1rem', padding: '0.5rem 0.75rem', width: '100%', outline: 'none', minHeight: '44px', boxSizing: 'border-box' };
+  const cardInput = { background: '#0a0a0a', border: '1px solid #2a2a2a', color: '#E0E0E0', fontFamily: F, fontSize: '1rem', padding: '0.5rem 0.75rem', width: '100%', maxWidth: '100%', outline: 'none', minHeight: '44px', boxSizing: 'border-box' };
   const cardSelect = { ...cardInput, cursor: 'pointer', appearance: 'none' };
   const label = { color: '#888888', fontFamily: F, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '0.25rem' };
 
   return (
-    <div style={{ borderBottom: '2px solid #2a2a2a', padding: '0.875rem' }}>
+    <div style={{ borderBottom: '2px solid #2a2a2a', padding: '0.875rem', overflow: 'hidden', boxSizing: 'border-box' }}>
       {/* Card header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
