@@ -114,7 +114,10 @@ export default function BacktestBulkEntry({ startingCapital, onRunBacktest }) {
       </div>
 
       {/* Table */}
-      <div style={{ overflowX: 'auto' }}>
+      <div className="mobile-scroll-hint" style={{ display: 'none', padding: '0.4rem 1rem', color: '#444444', fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '0.7rem', borderBottom: '1px solid #1a1a1a', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        ← Scroll to see all columns →
+      </div>
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '820px', fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '0.875rem' }}>
           <thead>
             <tr>

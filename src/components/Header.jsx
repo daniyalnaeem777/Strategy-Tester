@@ -72,7 +72,7 @@ export default function Header({ session, onExit }) {
 
         {/* Session stats */}
         {session?.mode && session?.trades?.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+          <div className="header-stats" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
             <Stat label="TRADES" value={String(session.trades.length)} />
             <Stat label="CAPITAL" value={fmtDollar(session.currentCapital)} color="#FF6600" />
             <Stat label="P&L" value={(sessionPnL >= 0 ? '+' : '') + fmtDollar(sessionPnL)} color={pnlColor} />
