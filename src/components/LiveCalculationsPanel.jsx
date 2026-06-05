@@ -1,18 +1,18 @@
 import { fmtPrice, fmtDollar, fmtPct, fmtRR } from '../utils/formatters.js';
 import { calcTrade } from '../utils/calculations.js';
 
-export default function LiveCalculationsPanel({ tradeValues, capital, onLogWin, onLogLoss }) {
+export default function LiveCalculationsPanel({ tradeValues, capital }) {
   const calc = calcTrade({
     direction: tradeValues.direction || 'LONG',
     entryPrice: tradeValues.entryPrice || 0,
     atr: tradeValues.atr || 0,
     slMultiple: tradeValues.slMultiple || 1,
-    tpMultiple: tradeValues.tpMultiple || 2,
+    tpPrice: tradeValues.tpPrice || 0,
     leverage: tradeValues.leverage || 1,
     capital,
   });
 
-  const ready = parseFloat(tradeValues.entryPrice) > 0 && parseFloat(tradeValues.atr) > 0;
+  const ready = parseFloat(tradeValues.entryPrice) > 0 && parseFloat(tradeValues.atr) > 0 && parseFloat(tradeValues.tpPrice) > 0;
 
   return (
     <div className="terminal-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -53,27 +53,6 @@ export default function LiveCalculationsPanel({ tradeValues, capital, onLogWin, 
 
       </div>
 
-      {/* Log buttons */}
-      <div style={{ padding: '1rem', paddingTop: 0 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-          <button
-            className="btn-win"
-            style={{ padding: '0.875rem', fontSize: '1.0625rem', opacity: ready ? 1 : 0.3, cursor: ready ? 'pointer' : 'not-allowed' }}
-            onClick={onLogWin}
-            disabled={!ready}
-          >
-            ✓ LOG WIN
-          </button>
-          <button
-            className="btn-loss"
-            style={{ padding: '0.875rem', fontSize: '1.0625rem', opacity: ready ? 1 : 0.3, cursor: ready ? 'pointer' : 'not-allowed' }}
-            onClick={onLogLoss}
-            disabled={!ready}
-          >
-            ✗ LOG LOSS
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

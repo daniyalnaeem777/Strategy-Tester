@@ -1,9 +1,13 @@
 import { calcTrade, applyTradeOutcome } from './calculations.js';
 
-export function createTradeRecord({ tradeNum, direction, entryPrice, atr, slMultiple, tpMultiple, leverage, capital, outcome }) {
-  const calc = calcTrade({ direction, entryPrice, atr, slMultiple, tpMultiple, leverage, capital });
+export function createTradeRecord({ tradeNum, direction, entryPrice, atr, slMultiple, tpPrice: tpPriceInput, tpMultiple, leverage, capital, outcome }) {
+  const calc = calcTrade({ direction, entryPrice, atr, slMultiple, tpPrice: tpPriceInput, tpMultiple, leverage, capital });
   const pnl = outcome === 'WIN' ? calc.maxGain : -calc.maxLoss;
   const capitalAfter = capital + pnl;
+
+  // Derive tpMultiple from calc for storage/reporting
+  const atrVal = parseFloat(atr) || 1;
+  const derivedTpMult = atrVal > 0 ? parseFloat((calc.tpDist / atrVal).toFixed(2)) : 0;
 
   return {
     tradeNum,
@@ -12,7 +16,7 @@ export function createTradeRecord({ tradeNum, direction, entryPrice, atr, slMult
     entryPrice: parseFloat(entryPrice),
     atr: parseFloat(atr),
     slMultiple: parseFloat(slMultiple),
-    tpMultiple: parseFloat(tpMultiple),
+    tpMultiple: tpPriceInput ? derivedTpMult : parseFloat(tpMultiple),
     leverage: parseFloat(leverage),
     slPrice: calc.slPrice,
     tpPrice: calc.tpPrice,

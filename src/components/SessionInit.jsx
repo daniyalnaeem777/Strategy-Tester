@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import NewsPanel from './NewsPanel.jsx';
 
 export default function SessionInit({ onInit }) {
   const [name, setName] = useState('');
@@ -18,8 +19,8 @@ export default function SessionInit({ onInit }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <div style={{ width: '100%', maxWidth: '480px' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', gap: '1.5rem', padding: '1rem', alignItems: 'flex-start', justifyContent: 'center' }}>
+      <div style={{ width: '100%', maxWidth: '480px', flexShrink: 0 }}>
 
         {/* Logo block */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
@@ -124,6 +125,15 @@ export default function SessionInit({ onInit }) {
           Session data stored locally in browser · No server required
         </p>
       </div>
+
+      {/* News panel — right side, fills viewport height */}
+      <div style={{ width: '360px', flexShrink: 0, height: 'calc(100vh - 2rem)', position: 'sticky', top: '1rem', display: 'none' }} className="news-sidebar">
+        <NewsPanel />
+      </div>
+
+      <style>{`
+        @media (min-width: 900px) { .news-sidebar { display: flex !important; flex-direction: column; } }
+      `}</style>
     </div>
   );
 }

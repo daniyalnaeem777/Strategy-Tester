@@ -1,16 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { fmtDollar } from '../utils/formatters.js';
 
 export default function Header({ session, onExit }) {
-  const [time, setTime] = useState(new Date());
   const navigate = useNavigate();
   const location = useLocation();
-
-  useEffect(() => {
-    const t = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
 
   const sessionPnL = session ? session.currentCapital - session.startingCapital : 0;
   const pnlColor = sessionPnL >= 0 ? '#00E676' : '#FF1744';
@@ -87,11 +81,6 @@ export default function Header({ session, onExit }) {
 
         {/* EXIT SESSION button */}
         <ExitButton onExit={onExit} navigate={navigate} />
-
-        {/* Clock */}
-        <div style={{ color: '#FF6600', fontFamily: F, fontSize: '0.9rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums', minWidth: '72px', textAlign: 'right' }}>
-          {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-        </div>
       </div>
     </header>
   );

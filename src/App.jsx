@@ -31,7 +31,7 @@ export default function App() {
                 ? <Navigate to="/" replace />
                 : session.mode !== 'LIVE'
                 ? <Navigate to="/backtest" replace />
-                : <LiveSession session={session} logTrade={logTrade} />
+                : <LiveSession session={session} />
             }
           />
           <Route
