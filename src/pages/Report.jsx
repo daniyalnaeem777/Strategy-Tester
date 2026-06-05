@@ -125,9 +125,9 @@ export default function Report({ session, setAiAnalysis, newSession }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div className="report-action-bar">
           <button
-            className="btn-amber"
+            className="btn-amber report-btn-primary"
             style={{ padding: '0.5rem 1rem', fontSize: '1.0625rem', opacity: isGenerating || generatingAI ? 0.6 : 1, cursor: isGenerating || generatingAI ? 'not-allowed' : 'pointer' }}
             onClick={handleGeneratePDF}
             disabled={isGenerating || generatingAI}
