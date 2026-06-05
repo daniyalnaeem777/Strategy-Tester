@@ -30,7 +30,7 @@ export default function NewsPanel() {
     setLoading(true);
     setError(null);
     setArticles([]);
-    const url = `${RSS2JSON}${encodeURIComponent(RSS_FEEDS[activeTab].url)}&count=20`;
+    const url = `${RSS2JSON}${encodeURIComponent(RSS_FEEDS[activeTab].url)}`;
     fetch(url)
       .then(r => r.json())
       .then(data => {
