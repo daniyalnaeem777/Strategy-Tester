@@ -265,6 +265,14 @@
   }
 }
 
+/* Report action bar */
+.report-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 /* Bulk entry: table on desktop, cards on mobile */
 .bulk-action-bar {
   padding: 0.75rem 1rem;
@@ -315,4 +323,15 @@
   /* Switch to card view, hide table */
   .bulk-table-view { display: none !important; }
   .bulk-card-view  { display: block !important; }
+
+  /* Report action bar: GENERATE full width, EXPORT+SHARE side by side, NEW SESSION full width */
+  .report-action-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  .report-btn-primary { grid-column: 1 / -1; }
+  .report-action-bar > button:last-child { grid-column: 1 / -1; }
+  .report-action-bar > * { justify-content: center; text-align: center; }
 }
