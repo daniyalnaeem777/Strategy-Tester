@@ -19,7 +19,7 @@ export default function SessionInit({ onInit }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', gap: '1.5rem', padding: '1rem', alignItems: 'flex-start', justifyContent: 'center' }}>
+    <div className="session-init-wrapper" style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', gap: '1.5rem', padding: '1rem', alignItems: 'flex-start', justifyContent: 'center' }}>
       <div style={{ width: '100%', maxWidth: '480px', flexShrink: 0 }}>
 
         {/* Logo block */}

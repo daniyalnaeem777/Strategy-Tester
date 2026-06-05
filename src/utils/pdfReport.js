@@ -184,11 +184,11 @@ export async function generatePDF({ trades, stats, session, aiAnalysis, equityCu
   const equityEl = document.getElementById(equityCurveId);
   if (equityEl) {
     try {
-      const canvas = await html2canvas(equityEl, { backgroundColor: '#111111', scale: 1.5 });
+      const canvas = await html2canvas(equityEl, { backgroundColor: '#111111', scale: 2 });
       const imgData = canvas.toDataURL('image/png');
       const imgH = (canvas.height / canvas.width) * (w - margin * 2);
-      doc.addImage(imgData, 'PNG', margin, y + 2, w - margin * 2, Math.min(imgH, 90));
-      y = y + Math.min(imgH, 90) + 8;
+      doc.addImage(imgData, 'PNG', margin, y + 2, w - margin * 2, Math.min(imgH, 120));
+      y = y + Math.min(imgH, 120) + 8;
     } catch (e) {}
   }
 
@@ -225,22 +225,37 @@ export async function generatePDF({ trades, stats, session, aiAnalysis, equityCu
   addFooter(doc, 4, sessionName);
   y = sectionHeading(doc, 'TRADE DISTRIBUTION ANALYSIS', 26);
 
-  const chartsEl = document.getElementById(chartsId);
-  if (chartsEl) {
+  const chartEls = [0, 1, 2, 3, 4].map(i => document.getElementById(`pdf-chart-${i}`)).filter(Boolean);
+  const chartImages = [];
+  for (const el of chartEls) {
     try {
-      const canvas = await html2canvas(chartsEl, { backgroundColor: '#0a0a0a', scale: 1.2 });
-      const imgData = canvas.toDataURL('image/png');
-      const maxH = h - y - 40;
-      const imgH = Math.min((canvas.height / canvas.width) * (w - margin * 2), maxH);
-      doc.addImage(imgData, 'PNG', margin, y + 2, w - margin * 2, imgH);
-    } catch (e) {}
+      const c = await html2canvas(el, { backgroundColor: '#111111', scale: 2 });
+      chartImages.push(c.toDataURL('image/png'));
+    } catch (e) { chartImages.push(null); }
   }
+
+  // Place 2 per row; wrap to new page as needed
+  const cellW = (w - margin * 2 - 6) / 2;
+  const cellH = 55;
+  let cx = margin, cy = y + 2;
+  chartImages.forEach((img, i) => {
+    if (!img) return;
+    if (i > 0 && i % 2 === 0) { cy += cellH + 6; cx = margin; }
+    if (cy + cellH > h - 45) {
+      doc.addPage();
+      addHeader(doc, 'TRADE DISTRIBUTION', sessionName);
+      addFooter(doc, doc.internal.getNumberOfPages(), sessionName);
+      cy = 30; cx = margin;
+    }
+    doc.addImage(img, 'PNG', cx, cy, cellW, cellH);
+    cx += cellW + 6;
+  });
 
   // ── PAGE 5: FULL TRADE LOG ─────────────────────────────────────────
   onProgress?.('Rendering trade log...');
   doc.addPage();
   addHeader(doc, 'COMPLETE TRADE LOG', sessionName);
-  addFooter(doc, 5, sessionName);
+  addFooter(doc, doc.internal.getNumberOfPages(), sessionName);
   y = sectionHeading(doc, 'COMPLETE TRADE LOG', 26);
 
   const tradeRows = trades.map(t => [
