@@ -9,7 +9,7 @@ const DEFAULT_VALUES = {
   entryPrice: '',
   atr: '',
   slMultiple: '1.0',
-  tpMultiple: '2.0',
+  tpPrice: '',
   leverage: '1',
 };
 

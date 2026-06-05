@@ -1,16 +1,27 @@
-export function calcTrade({ direction, entryPrice, atr, slMultiple, tpMultiple, leverage, capital }) {
+export function calcTrade({ direction, entryPrice, atr, slMultiple, tpPrice: tpPriceInput, tpMultiple, leverage, capital }) {
   const entry = parseFloat(entryPrice) || 0;
   const atrVal = parseFloat(atr) || 0;
   const slMult = parseFloat(slMultiple) || 1;
-  const tpMult = parseFloat(tpMultiple) || 2;
   const lev = parseFloat(leverage) || 1;
   const cap = parseFloat(capital) || 10000;
 
   const slDist = atrVal * slMult;
-  const tpDist = atrVal * tpMult;
-
   const slPrice = direction === 'LONG' ? entry - slDist : entry + slDist;
-  const tpPrice = direction === 'LONG' ? entry + tpDist : entry - tpDist;
+
+  // TP: use direct price if provided, otherwise fall back to multiple
+  let tpPrice, tpDist;
+  const tpPriceParsed = parseFloat(tpPriceInput);
+  if (tpPriceInput && tpPriceParsed > 0) {
+    tpPrice = tpPriceParsed;
+    tpDist = direction === 'LONG' ? tpPrice - entry : entry - tpPrice;
+  } else {
+    const tpMult = parseFloat(tpMultiple) || 2;
+    tpDist = atrVal * tpMult;
+    tpPrice = direction === 'LONG' ? entry + tpDist : entry - tpDist;
+  }
+
+  // Ensure tpDist is positive
+  tpDist = Math.abs(tpDist);
 
   const slPct = entry > 0 ? (slDist / entry) * 100 : 0;
   const tpPct = entry > 0 ? (tpDist / entry) * 100 : 0;
@@ -87,7 +98,7 @@ export function calcBacktestStats(trades, startingCapital) {
 
   const maxDDPct = peak > 0 ? (maxDD / peak) * 100 : 0;
 
-  // Sharpe ratio (simplified, assuming daily returns)
+  // Sharpe ratio
   const pnls = trades.map(t => t.pnl);
   const mean = pnls.reduce((s, v) => s + v, 0) / pnls.length;
   const variance = pnls.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / pnls.length;
@@ -100,10 +111,9 @@ export function calcBacktestStats(trades, startingCapital) {
   const profitFactor = grossLosses > 0 ? grossWins / grossLosses : grossWins > 0 ? Infinity : 0;
 
   const expectancy = trades.length > 0 ? totalPnL / trades.length : 0;
-
   const avgRR = trades.length > 0 ? trades.reduce((s, t) => s + (t.rr || 0), 0) / trades.length : 0;
 
-  // Best multiples
+  // Best multiples/params
   const slGroups = groupBy(trades, 'slMultiple');
   const tpGroups = groupBy(trades, 'tpMultiple');
   const levGroups = groupBy(trades, 'leverage');

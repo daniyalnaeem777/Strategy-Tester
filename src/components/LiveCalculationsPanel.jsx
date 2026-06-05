@@ -7,12 +7,12 @@ export default function LiveCalculationsPanel({ tradeValues, capital, onLogWin, 
     entryPrice: tradeValues.entryPrice || 0,
     atr: tradeValues.atr || 0,
     slMultiple: tradeValues.slMultiple || 1,
-    tpMultiple: tradeValues.tpMultiple || 2,
+    tpPrice: tradeValues.tpPrice || 0,
     leverage: tradeValues.leverage || 1,
     capital,
   });
 
-  const ready = parseFloat(tradeValues.entryPrice) > 0 && parseFloat(tradeValues.atr) > 0;
+  const ready = parseFloat(tradeValues.entryPrice) > 0 && parseFloat(tradeValues.atr) > 0 && parseFloat(tradeValues.tpPrice) > 0;
 
   return (
     <div className="terminal-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
