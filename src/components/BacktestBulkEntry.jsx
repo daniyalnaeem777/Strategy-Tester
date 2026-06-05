@@ -4,9 +4,13 @@ import { downloadCSVTemplate, parseCSV, createTradeRecord } from '../utils/trade
 const SL_OPTIONS = ['0.5', '1.0', '1.5', '2.0', '2.5', '3.0'];
 const LEV_OPTIONS = ['1', '2', '3', '5', '10', '20', '25', '50', '100'];
 
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 let nextId = 1;
 function emptyRow() {
-  return { id: nextId++, direction: 'LONG', entryPrice: '', atr: '', slMultiple: '1.0', tpPrice: '', leverage: '1', outcome: 'WIN' };
+  return { id: nextId++, date: todayStr(), direction: 'LONG', entryPrice: '', atr: '', slMultiple: '1.0', tpPrice: '', leverage: '1', outcome: 'WIN' };
 }
 
 export default function BacktestBulkEntry({ startingCapital, onRunBacktest }) {
@@ -54,6 +58,7 @@ export default function BacktestBulkEntry({ startingCapital, onRunBacktest }) {
     const trades = validRows.map((r, i) => {
       const trade = createTradeRecord({
         tradeNum: i + 1,
+        date: r.date,
         direction: r.direction,
         entryPrice: r.entryPrice,
         atr: r.atr,
@@ -114,6 +119,7 @@ export default function BacktestBulkEntry({ startingCapital, onRunBacktest }) {
           <thead>
             <tr>
               <th style={th}>#</th>
+              <th style={th}>DATE</th>
               <th style={th}>DIRECTION</th>
               <th style={th}>ENTRY PRICE</th>
               <th style={th}>ATR (14)</th>
@@ -133,6 +139,16 @@ export default function BacktestBulkEntry({ startingCapital, onRunBacktest }) {
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <td style={{ padding: '0.375rem 0.625rem', color: '#444444', fontSize: '0.875rem' }}>{idx + 1}</td>
+
+                {/* Date */}
+                <td style={{ padding: '0.375rem 0.375rem' }}>
+                  <input
+                    type="date"
+                    value={row.date}
+                    onChange={e => updateRow(row.id, 'date', e.target.value)}
+                    style={{ ...cellInput, width: '130px', colorScheme: 'dark' }}
+                  />
+                </td>
 
                 {/* Direction — wider so full word fits */}
                 <td style={{ padding: '0.375rem 0.375rem' }}>
