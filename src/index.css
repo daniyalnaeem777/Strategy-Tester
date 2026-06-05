@@ -308,7 +308,16 @@
   .exit-confirm-text { display: none !important; }
 
   /* Prevent any panel content from overflowing screen width */
-  .terminal-panel { overflow: hidden; }
+  .terminal-panel { overflow: hidden; max-width: 100%; }
+
+  /* Force date input to respect its container width on iOS/Safari */
+  input[type="date"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    display: block !important;
+  }
 
   /* Compress header nav tabs on mobile */
   header nav button {
