@@ -265,6 +265,17 @@
   }
 }
 
+/* Bulk entry: table on desktop, cards on mobile */
+.bulk-action-bar {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.bulk-table-view { display: block; }
+.bulk-card-view  { display: none; }
+
 @media (max-width: 768px) {
   /* Stepper buttons bigger touch targets */
   .stepper-btn {
@@ -290,4 +301,17 @@
   .mobile-scroll-hint { display: block !important; }
 
   .session-init-wrapper { align-items: center; padding: 0.75rem; }
+
+  /* 2×2 button grid on mobile */
+  .bulk-action-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  .bulk-action-bar > * { justify-content: center; width: 100%; }
+
+  /* Switch to card view, hide table */
+  .bulk-table-view { display: none !important; }
+  .bulk-card-view  { display: block !important; }
 }
