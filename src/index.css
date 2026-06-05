@@ -297,6 +297,7 @@
   }
 
   .header-stats { display: none !important; }
+  .exit-confirm-text { display: none !important; }
 
   .mobile-scroll-hint { display: block !important; }
 

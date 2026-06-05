@@ -171,24 +171,24 @@ function TradeCard({ row, idx, onUpdate, onDelete, canDelete }) {
         )}
       </div>
 
-      {/* Row 1: Date + Direction */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem', marginBottom: '0.625rem' }}>
-        <div>
-          <span style={label}>Date</span>
-          <input type="date" value={row.date} onChange={e => onUpdate(row.id, 'date', e.target.value)} style={{ ...cardInput, colorScheme: 'dark' }} />
-        </div>
-        <div>
-          <span style={label}>Direction</span>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.375rem' }}>
-            <button onClick={() => onUpdate(row.id, 'direction', 'LONG')}
-              style={{ border: `2px solid ${row.direction === 'LONG' ? '#00E676' : '#2a2a2a'}`, background: row.direction === 'LONG' ? '#00E676' : 'transparent', color: row.direction === 'LONG' ? '#000' : '#888888', fontFamily: F, fontWeight: 700, fontSize: '0.8rem', padding: '0.5rem 0', cursor: 'pointer', minHeight: '44px' }}>
-              ▲ LONG
-            </button>
-            <button onClick={() => onUpdate(row.id, 'direction', 'SHORT')}
-              style={{ border: `2px solid ${row.direction === 'SHORT' ? '#FF1744' : '#2a2a2a'}`, background: row.direction === 'SHORT' ? '#FF1744' : 'transparent', color: row.direction === 'SHORT' ? '#fff' : '#888888', fontFamily: F, fontWeight: 700, fontSize: '0.8rem', padding: '0.5rem 0', cursor: 'pointer', minHeight: '44px' }}>
-              ▼ SHORT
-            </button>
-          </div>
+      {/* Row 1: Date — full width */}
+      <div style={{ marginBottom: '0.625rem' }}>
+        <span style={label}>Date</span>
+        <input type="date" value={row.date} onChange={e => onUpdate(row.id, 'date', e.target.value)} style={{ ...cardInput, colorScheme: 'dark' }} />
+      </div>
+
+      {/* Row 2: Direction — full width toggle */}
+      <div style={{ marginBottom: '0.625rem' }}>
+        <span style={label}>Direction</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+          <button onClick={() => onUpdate(row.id, 'direction', 'LONG')}
+            style={{ border: `2px solid ${row.direction === 'LONG' ? '#00E676' : '#2a2a2a'}`, background: row.direction === 'LONG' ? '#00E676' : 'transparent', color: row.direction === 'LONG' ? '#000' : '#888888', fontFamily: F, fontWeight: 700, fontSize: '1rem', padding: '0.625rem 0', cursor: 'pointer', minHeight: '48px' }}>
+            ▲ LONG
+          </button>
+          <button onClick={() => onUpdate(row.id, 'direction', 'SHORT')}
+            style={{ border: `2px solid ${row.direction === 'SHORT' ? '#FF1744' : '#2a2a2a'}`, background: row.direction === 'SHORT' ? '#FF1744' : 'transparent', color: row.direction === 'SHORT' ? '#fff' : '#888888', fontFamily: F, fontWeight: 700, fontSize: '1rem', padding: '0.625rem 0', cursor: 'pointer', minHeight: '48px' }}>
+            ▼ SHORT
+          </button>
         </div>
       </div>
 

@@ -92,15 +92,15 @@ function ExitButton({ onExit, navigate }) {
 
   if (confirm) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-        <span style={{ color: '#888888', fontFamily: F, fontSize: '0.8rem' }}>Exit session?</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
+        <span className="exit-confirm-text" style={{ color: '#888888', fontFamily: F, fontSize: '0.8rem' }}>Exit session?</span>
         <button
           onClick={() => { onExit(); navigate('/'); }}
-          style={{ background: '#FF1744', color: '#fff', border: 'none', fontFamily: F, fontSize: '0.8rem', fontWeight: 700, padding: '0.25rem 0.625rem', cursor: 'pointer', textTransform: 'uppercase' }}
+          style={{ background: '#FF1744', color: '#fff', border: 'none', fontFamily: F, fontSize: '0.8rem', fontWeight: 700, padding: '0.25rem 0.625rem', cursor: 'pointer', textTransform: 'uppercase', whiteSpace: 'nowrap' }}
         >YES</button>
         <button
           onClick={() => setConfirm(false)}
-          style={{ background: 'transparent', color: '#888888', border: '1px solid #2a2a2a', fontFamily: F, fontSize: '0.8rem', padding: '0.25rem 0.625rem', cursor: 'pointer', textTransform: 'uppercase' }}
+          style={{ background: 'transparent', color: '#888888', border: '1px solid #2a2a2a', fontFamily: F, fontSize: '0.8rem', padding: '0.25rem 0.625rem', cursor: 'pointer', textTransform: 'uppercase', whiteSpace: 'nowrap' }}
         >NO</button>
       </div>
     );
