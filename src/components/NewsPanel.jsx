@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 
 const RSS_FEEDS = [
-  { label: 'Markets', url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories' },
-  { label: 'Crypto', url: 'https://feeds.feedburner.com/CoinDesk' },
-  { label: 'Forex', url: 'https://www.dailyfx.com/feeds/market-news' },
+  { label: 'Markets', url: 'https://feeds.bbci.co.uk/news/business/rss.xml' },
+  { label: 'Crypto', url: 'https://finance.yahoo.com/news/rssindex' },
+  { label: 'Forex', url: 'https://feeds.reuters.com/reuters/businessNews' },
 ];
 
 const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
@@ -20,6 +20,7 @@ function timeAgo(dateStr) {
 
 export default function NewsPanel() {
   const [activeTab, setActiveTab] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,19 +29,20 @@ export default function NewsPanel() {
   useEffect(() => {
     setLoading(true);
     setError(null);
+    setArticles([]);
     const url = `${RSS2JSON}${encodeURIComponent(RSS_FEEDS[activeTab].url)}&count=20`;
     fetch(url)
       .then(r => r.json())
       .then(data => {
-        if (data.status === 'ok') {
-          setArticles(data.items || []);
+        if (data.status === 'ok' && data.items?.length > 0) {
+          setArticles(data.items);
         } else {
-          setError('Unable to load feed');
+          setError(`Feed unavailable (${data.message || data.status || 'no items'})`);
         }
         setLoading(false);
       })
-      .catch(() => { setError('Network error'); setLoading(false); });
-  }, [activeTab]);
+      .catch(e => { setError(`Network error: ${e.message}`); setLoading(false); });
+  }, [activeTab, retryCount]);
 
   return (
     <div className="terminal-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -87,8 +89,12 @@ export default function NewsPanel() {
           </div>
         )}
         {error && (
-          <div style={{ padding: '1rem', color: '#FF1744', fontFamily: F, fontSize: '0.8rem', textAlign: 'center' }}>
-            {error}
+          <div style={{ padding: '1rem', textAlign: 'center' }}>
+            <div style={{ color: '#FF1744', fontFamily: F, fontSize: '0.75rem', marginBottom: '0.5rem' }}>{error}</div>
+            <button
+              onClick={() => setRetryCount(c => c + 1)}
+              style={{ background: 'transparent', border: '1px solid #FF6600', color: '#FF6600', fontFamily: F, fontSize: '0.7rem', padding: '0.25rem 0.625rem', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.08em' }}
+            >↺ RETRY</button>
           </div>
         )}
         {!loading && !error && articles.map((item, i) => (
