@@ -45,7 +45,7 @@ export default function DistributionCharts({ trades, id = 'distribution-charts' 
   return (
     <div id={id} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
 
-      <ChartPanel title="WIN / LOSS DISTRIBUTION">
+      <ChartPanel title="WIN / LOSS DISTRIBUTION" id="pdf-chart-0">
         <ResponsiveContainer width="100%" height={210}>
           <PieChart>
             <Pie
@@ -63,19 +63,19 @@ export default function DistributionCharts({ trades, id = 'distribution-charts' 
         </ResponsiveContainer>
       </ChartPanel>
 
-      <ChartPanel title="P&L BY DIRECTION">
+      <ChartPanel title="P&L BY DIRECTION" id="pdf-chart-1">
         <BarGroupChart data={dirData} suffix="" isDollar />
       </ChartPanel>
 
-      <ChartPanel title="P&L BY SL MULTIPLE">
+      <ChartPanel title="P&L BY SL MULTIPLE" id="pdf-chart-2">
         <BarGroupChart data={slData} suffix="x" isDollar />
       </ChartPanel>
 
-      <ChartPanel title="P&L BY TP MULTIPLE">
+      <ChartPanel title="P&L BY TP MULTIPLE" id="pdf-chart-3">
         <BarGroupChart data={tpData} suffix="x" isDollar />
       </ChartPanel>
 
-      <ChartPanel title="P&L BY LEVERAGE" style={{ gridColumn: 'span 1' }}>
+      <ChartPanel title="P&L BY LEVERAGE" id="pdf-chart-4" style={{ gridColumn: 'span 1' }}>
         <BarGroupChart data={levData} suffix="x" isDollar />
       </ChartPanel>
 
@@ -83,9 +83,9 @@ export default function DistributionCharts({ trades, id = 'distribution-charts' 
   );
 }
 
-function ChartPanel({ title, children }) {
+function ChartPanel({ title, children, id }) {
   return (
-    <div className="terminal-panel">
+    <div className="terminal-panel" id={id}>
       <div className="panel-header" style={{ fontSize: '0.65rem' }}>
         <span style={{ display: 'inline-block', width: 6, height: 6, background: '#FF6600' }}></span>
         {title}
