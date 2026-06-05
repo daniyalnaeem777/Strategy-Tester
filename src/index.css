@@ -307,6 +307,17 @@
   .header-stats { display: none !important; }
   .exit-confirm-text { display: none !important; }
 
+  /* Compress header nav tabs on mobile */
+  header nav button {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.7rem !important;
+    letter-spacing: 0.04em !important;
+  }
+  /* Shrink logo on mobile */
+  header > button span:first-child {
+    font-size: 0.95rem !important;
+  }
+
   .mobile-scroll-hint { display: block !important; }
 
   .session-init-wrapper { align-items: center; padding: 0.75rem; }

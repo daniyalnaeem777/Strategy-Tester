@@ -20,7 +20,7 @@ export default function Header({ session, onExit }) {
     <header style={{
       background: '#0a0a0a',
       borderBottom: '1px solid #2a2a2a',
-      padding: '0 1rem',
+      padding: '0 0.75rem',
       height: '48px',
       display: 'flex',
       alignItems: 'center',
@@ -28,7 +28,8 @@ export default function Header({ session, onExit }) {
       position: 'sticky',
       top: 0,
       zIndex: 50,
-      gap: '0.75rem',
+      gap: '0.375rem',
+      overflow: 'hidden',
     }}>
 
       {/* Logo */}
@@ -67,8 +68,8 @@ export default function Header({ session, onExit }) {
         </nav>
       )}
 
-      {/* Right: stats + exit + clock */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginLeft: 'auto' }}>
+      {/* Right: stats + exit */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto', flexShrink: 0 }}>
 
         {/* Session stats */}
         {session?.mode && session?.trades?.length > 0 && (
